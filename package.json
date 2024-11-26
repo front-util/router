@@ -1,0 +1,79 @@
+{
+  "name": "bun-pkg-template",
+  "version": "0.1.0",
+  "description": "template",
+  "author": "IVGolubev",
+  "license": "ISC",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com:garryk3/bun-pkg-template.git"
+  },
+  "types": "./types/src/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./types/*": "./types/*.d.ts",
+    "./types": "./types/index.d.ts",
+    "./packages": "./src/index.ts",
+    "./types/index.d.ts": "./types/index.d.ts"
+  },
+  "imports": {
+    "#src/*": "./src/*"
+  },
+  "scripts": {
+    "check-lint": "eslint --max-warnings=0 --fix",
+    "check-types": "tsc --noEmit",
+    "test": "bun test",
+    "publish": "bun run build && npm publish --access public",
+    "build-lib": "bun build ./src/index.ts --outdir ./dist --target browser --minify --format esm",
+    "build": "rm -rf dist && rm -rf types && bun run build-lib & tsc --p tsconfig.build.json"
+  },
+  "browserslist": [
+    "chrome > 83",
+    "safari > 14.0"
+  ],
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged --no-stash",
+    "pre-push": "bun run test",
+    "preserveUnused": true
+  },
+  "publishConfig": {
+    "access": "public",
+    "ignore": [
+      ".github/",
+      "tsconfig.json"
+    ]
+  },
+  "keywords": [
+    "Javascript",
+    "Utils"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "@front-utils/linter": "^0.9.6",
+    "@types/bun": "^1.1.13",
+    "@types/eslint-plugin-jsx-a11y": "^6.9.0",
+    "@types/eslint__js": "^8.42.3",
+    "@types/node": "^22.9.1",
+    "bun": "^1.1.36",
+    "eslint": "^9.13.0",
+    "eslint-import-resolver-alias": "^1.1.2",
+    "eslint-import-resolver-typescript": "^3.6.3",
+    "eslint-plugin-compat": "^6.0.1",
+    "eslint-plugin-filenames": "^1.3.2",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-optimize-regex": "^1.2.1",
+    "eslint-plugin-promise": ">=6.0.0",
+    "eslint-plugin-sonarjs": "^1.0.4",
+    "globals": "^15.11.0",
+    "lint-staged": "^15.2.10",
+    "simple-git-hooks": "^2.11.1",
+    "typescript": "^5.6.3",
+    "typescript-eslint": ">=8.0.0"
+  },
+  "peerDependencies": {}
+}
