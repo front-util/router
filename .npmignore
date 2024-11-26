@@ -10,6 +10,6 @@ lintstagedrc.json
 bun.lockdb
 eslint.config.js
 tsconfig.json
+tsconfig.build.json
 
 tests/
-src/

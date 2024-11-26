@@ -16,7 +16,12 @@
       "#src/*": [
         "./src/*"
       ],
-    }
+    },
+    "types": [
+      "./src/index.d.ts",
+      "node",
+      "bun"
+    ]
   },
   "exclude": [
     "node_modules",
@@ -25,6 +30,7 @@
   ],
   "include": [
     "./src/**/*",
-    "./tests/**/*"
+    "./tests/**/*",
+    "./src/index.d.ts"
   ]
 }

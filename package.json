@@ -1,21 +1,21 @@
 {
-  "name": "bun-pkg-template",
+  "name": "@front-utils/router",
   "version": "0.1.0",
-  "description": "template",
+  "description": "Client router",
   "author": "IVGolubev",
   "license": "ISC",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com:garryk3/bun-pkg-template.git"
+    "url": "https://git@github.com:front-util/router.git"
   },
   "types": "./types/src/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
     "./types/*": "./types/*.d.ts",
-    "./types": "./types/index.d.ts",
+    "./types": "./types/src/index.d.ts",
     "./packages": "./src/index.ts",
-    "./types/index.d.ts": "./types/index.d.ts"
+    "./types/index.d.ts": "./types/src/index.d.ts"
   },
   "imports": {
     "#src/*": "./src/*"
@@ -23,9 +23,9 @@
   "scripts": {
     "check-lint": "eslint --max-warnings=0 --fix",
     "check-types": "tsc --noEmit",
-    "test": "bun test",
-    "publish": "bun run build && npm publish --access public",
-    "build-lib": "bun build ./src/index.ts --outdir ./dist --target browser --minify --format esm",
+    "test": "bun test tests",
+    "pub": "bun run build && npm publish --access public",
+    "build-lib": "bun build ./src/index.ts --outdir ./dist --target browser --format esm --minify --external history --external @front-utils/utils",
     "build": "rm -rf dist && rm -rf types && bun run build-lib & tsc --p tsconfig.build.json"
   },
   "browserslist": [
@@ -46,7 +46,9 @@
   },
   "keywords": [
     "Javascript",
-    "Utils"
+    "Router",
+    "Navigation router",
+    "Hash router"
   ],
   "engines": {
     "node": ">=18.0.0"
@@ -54,10 +56,10 @@
   "devDependencies": {
     "@eslint/js": "^9.13.0",
     "@front-utils/linter": "^0.9.6",
-    "@types/bun": "^1.1.13",
+    "@types/bun": "^1.1.14",
     "@types/eslint-plugin-jsx-a11y": "^6.9.0",
     "@types/eslint__js": "^8.42.3",
-    "@types/node": "^22.9.1",
+    "@types/node": "^22.10.0",
     "bun": "^1.1.36",
     "eslint": "^9.13.0",
     "eslint-import-resolver-alias": "^1.1.2",
@@ -75,5 +77,11 @@
     "typescript": "^5.6.3",
     "typescript-eslint": ">=8.0.0"
   },
-  "peerDependencies": {}
+  "peerDependencies": {},
+  "optionalDependencies": {
+    "history": "^5.3.0"
+  },
+  "dependencies": {
+    "@front-utils/utils": "^0.2.6"
+  }
 }
