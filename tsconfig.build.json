@@ -6,7 +6,7 @@
         "declarationDir": "./types",
         "emitDeclarationOnly": true,
         "outDir": "./dist",
-        "rootDir": ".",
+        "rootDir": "./src",
         "moduleResolution": "node",
     },
     "include": [

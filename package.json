@@ -1,6 +1,6 @@
 {
   "name": "@front-utils/router",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Client router",
   "author": "IVGolubev",
   "license": "ISC",
@@ -9,13 +9,13 @@
     "type": "git",
     "url": "https://git@github.com:front-util/router.git"
   },
-  "types": "./types/src/index.d.ts",
+  "types": "./types/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
     "./types/*": "./types/*.d.ts",
-    "./types": "./types/src/index.d.ts",
+    "./types": "./types/index.d.ts",
     "./packages": "./src/index.ts",
-    "./types/index.d.ts": "./types/src/index.d.ts"
+    "./types/index.d.ts": "./types/index.d.ts"
   },
   "imports": {
     "#src/*": "./src/*"
