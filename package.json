@@ -12,9 +12,9 @@
   "exports": {
     ".": "./dist/index.js",
     "./types/*": "./types/*.d.ts",
-    "./types": "./types/src/index.d.ts",
+    "./types": "./types/index.d.ts",
     "./packages": "./src/index.ts",
-    "./types/index.d.ts": "./types/src/index.d.ts"
+    "./types/index.d.ts": "./types/index.d.ts"
   },
   "imports": {
     "#src/*": "./src/*"
