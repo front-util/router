@@ -1,7 +1,7 @@
 {
   "name": "@front-utils/router",
-  "version": "0.1.0",
-  "description": "Client router",
+  "version": "0.2.0",
+  "description": "Client simple hash router",
   "author": "IVGolubev",
   "license": "ISC",
   "type": "module",
@@ -9,7 +9,6 @@
     "type": "git",
     "url": "https://git@github.com:front-util/router.git"
   },
-  "types": "./types/src/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
     "./types/*": "./types/*.d.ts",
@@ -48,7 +47,8 @@
     "Javascript",
     "Router",
     "Navigation router",
-    "Hash router"
+    "Hash router",
+    "Simple router"
   ],
   "engines": {
     "node": ">=18.0.0"
@@ -78,10 +78,8 @@
     "typescript-eslint": ">=8.0.0"
   },
   "peerDependencies": {},
-  "optionalDependencies": {
-    "history": "^5.3.0"
-  },
   "dependencies": {
-    "@front-utils/utils": "^0.2.6"
+    "@front-utils/utils": "^0.2.6",
+    "@preact/signals": "^2.0.3"
   }
 }

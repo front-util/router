@@ -27,3 +27,4 @@ build
 temp
 dist
 types
+.qodo
