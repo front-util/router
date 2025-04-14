@@ -14,6 +14,7 @@ export interface NavigationHistoryEntry {
     state?: any;
     // Method to retrieve the state
     getState<T extends NavigationState = NavigationState>(): T | undefined;
+    getHash(): string;
   }
   
 /**
