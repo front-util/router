@@ -1,3 +1,5 @@
+import { ReadonlySignal } from "@preact/signals";
+
 export type NavigationState = Record<string, unknown>;
 
 /**
@@ -41,4 +43,51 @@ export interface NavigateEvent extends Event {
 export interface NavigationOptions {
     state?: unknown;
     info?: unknown;
-  }
+}
+
+export interface HashNavigation {
+  // Public signals
+  currentEntry: ReadonlySignal<NavigationHistoryEntry>;
+  entries: ReadonlySignal<NavigationHistoryEntry[]>;
+  canGoBack: ReadonlySignal<boolean>;
+  canGoForward: ReadonlySignal<boolean>;
+  
+  // Navigation methods
+  navigate: (hash: string, options?: NavigationOptions) => NavigationResult;
+  traverseTo: (key: string, options?: NavigationOptions) => NavigationResult | null;
+  back: (options?: NavigationOptions) => NavigationResult | null;
+  forward: (options?: NavigationOptions) => NavigationResult | null;
+  reload: (options?: NavigationOptions) => NavigationResult;
+  updateCurrentEntry: (delta: Partial<NavigationState>) => void;
+  
+  // Event handlers
+  addEventListener: (type: string, listener: EventListener) => void;
+  removeEventListener: (type: string, listener: EventListener) => void;
+  
+  // Cleanup
+  destroy: () => void;
+}
+
+/**
+ * router interfaces
+ */
+export interface InitializeRouterConfig {
+  homeUrl: string;
+  routeNames: string[];
+}
+
+export interface SubscribeChangeConfig {
+  onChange: (loc: NavigationHistoryEntry) => void;
+  config: InitializeRouterConfig;
+}
+
+export interface HashRouter {
+  navigation: HashNavigation;
+  initializeAndSubscribeOnChange: (config: SubscribeChangeConfig) => VoidFunction;
+  subscribeOnListenHistory: (callback: (update: NavigationHistoryEntry, prevLocation?: NavigationHistoryEntry | null) => void) => VoidFunction;
+  navigate: (hash: string, state?: Record<string, unknown>) => void;
+  replaceState : (config?: {state?: Record<string, unknown>; hash?: string;}) => void;
+  goBack: VoidFunction;
+  goToPrev: VoidFunction;
+  isExistPageByCurrentHash: (hash?: string) => boolean;
+}

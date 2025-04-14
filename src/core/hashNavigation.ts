@@ -4,7 +4,8 @@ import type {
     NavigationResult, 
     NavigationState, 
     NavigationHistoryEntry, 
-    NavigationOptions 
+    NavigationOptions, 
+    HashNavigation
 } from '#src/types';
 import { 
     createHistoryEntry, 
@@ -17,7 +18,7 @@ import {
  * Implementation of hash-based router core using Preact signals
  * and following the Navigation API interface, while using window.history for compatibility
  */
-export const createHashNavigation = () => {
+export const createHashNavigation = (): HashNavigation => {
     // Internal signals to manage router state
     const _currentURL = signal<string>(window.location.href);
     const _entries = signal<NavigationHistoryEntry[]>([createHistoryEntry(window.location.href)]);
