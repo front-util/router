@@ -191,11 +191,10 @@ export const createHashNavigation = (): HashNavigation => {
     const navigate = (hash: string, options: NavigationOptions = {}): NavigationResult => {
         // Create full URL by resolving against current location
         const originalHash = currentEntry.value.getHash();
-        const newHash = createHash(hash);
-        const fullUrl = new URL(`#${newHash}`, window.location.href).href;
+        const fullUrl = new URL(`#${createHash(hash)}`, window.location.href).href;
         
         // Only navigate if the hash part actually changed
-        if(originalHash !== newHash) {            
+        if(originalHash !== hash) {            
             // Create a new destination with state from options
             const destination = createHistoryEntry(fullUrl, options.state as NavigationState, _entries.value.length);
             

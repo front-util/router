@@ -8,8 +8,8 @@ import type { NavigationHistoryEntry, NavigationState } from '#src/types';
 describe('helpers/getHash', () => {
     it('should extract hash from URL', () => {
         expect(getHash('https://example.com#section')).toBe('section');
-        expect(getHash('https://example.com#/users')).toBe('/users');
-        expect(getHash('https://example.com/path#/dashboard')).toBe('/dashboard');
+        expect(getHash('https://example.com#/users')).toBe('users');
+        expect(getHash('https://example.com/path#/dashboard')).toBe('dashboard');
     });
 
     it('should return "/" for URLs without hash', () => {
@@ -23,8 +23,8 @@ describe('helpers/getHash', () => {
 
     it('should handle various hash formats', () => {
         expect(getHash('https://example.com#section?query=param')).toBe('section?query=param');
-        expect(getHash('https://example.com#/path/to/resource')).toBe('/path/to/resource');
-        expect(getHash('https://example.com/base/path#/relative/path')).toBe('/relative/path');
+        expect(getHash('https://example.com#/path/to/resource')).toBe('path/to/resource');
+        expect(getHash('https://example.com/base/path#/relative/path')).toBe('relative/path');
     });
 
     it('should handle URL objects', () => {

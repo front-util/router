@@ -88,13 +88,13 @@ HashRouter provides a higher-level API for common routing operations, with easie
 
 #### Methods
 
-- `initializeAndSubscribeOnChange(config)` - Initialize the router and subscribe to location changes
-- `subscribeOnListenHistory(callback)` - Subscribe to history changes
+- `create(config)` - Initialize the router and subscribe to location changes
+- `subscribe(callback)` - Subscribe to history changes
 - `navigate(hash, state)` - Navigate to a specific hash with optional state
 - `replaceState(config)` - Replace the current state and/or hash
 - `goBack()` - Navigate back in history
 - `goToPrev()` - Alias for goBack
-- `isExistPageByCurrentHash(hash?)` - Check if a page exists in configured routes
+- `hasPage(hash?)` - Check if a page exists in configured routes
 
 ## Usage Examples
 
@@ -104,7 +104,7 @@ HashRouter provides a higher-level API for common routing operations, with easie
 import { hashRouter } from '@front-utils/router';
 
 // Initialize the router with routes configuration
-const unsubscribe = hashRouter.initializeAndSubscribeOnChange({
+const unsubscribe = hashRouter.create({
   onChange: (location) => {
     console.log('Route changed:', location.getHash());
     // Update your UI based on the new location
@@ -128,7 +128,7 @@ hashRouter.navigate('about');
 import { hashRouter } from '@front-utils/router';
 
 // Initialize with more complex state handling
-hashRouter.initializeAndSubscribeOnChange({
+hashRouter.create({
   onChange: (location) => {
     const hash = location.getHash();
     const state = location.getState();
@@ -152,7 +152,7 @@ hashRouter.navigate('profile', {
 });
 
 // Check if current route is valid
-if (hashRouter.isExistPageByCurrentHash()) {
+if (hashRouter.hasPage()) {
   console.log('Current route is valid');
 } else {
   console.log('Invalid route, redirecting to home');
@@ -188,7 +188,7 @@ const handleRouteChange = (location) => {
 };
 
 // Initialize the router
-hashRouter.initializeAndSubscribeOnChange({
+hashRouter.create({
   onChange: handleRouteChange,
   config: {
     homeUrl: 'home',
@@ -221,7 +221,7 @@ import { hashRouter } from '@front-utils/router';
 
 // Track a user's navigation through a product catalog
 // Initialize with a product catalog setup
-hashRouter.initializeAndSubscribeOnChange({
+hashRouter.create({
   onChange: (location) => {
     const hash = location.getHash();
     const state = location.getState();
@@ -273,7 +273,7 @@ function useHashRouter() {
   const [routeState, setRouteState] = useState({});
 
   useEffect(() => {
-    const unsubscribe = hashRouter.initializeAndSubscribeOnChange({
+    const unsubscribe = hashRouter.create({
       onChange: (location) => {
         setCurrentRoute(location.getHash());
         setRouteState(location.getState() || {});
@@ -329,7 +329,7 @@ const currentRoute = ref('');
 const routeState = ref({});
 
 // Initialize the router
-const unsubscribe = hashRouter.initializeAndSubscribeOnChange({
+const unsubscribe = hashRouter.create({
   onChange: (location) => {
     currentRoute.value = location.getHash();
     routeState.value = location.getState() || {};
@@ -425,13 +425,13 @@ export interface HashNavigation {
 ```typescript
 export interface HashRouter {
   navigation: HashNavigation;
-  initializeAndSubscribeOnChange: (config: SubscribeChangeConfig) => VoidFunction;
-  subscribeOnListenHistory: (callback: (update: NavigationHistoryEntry, prevLocation?: NavigationHistoryEntry | null) => void) => VoidFunction;
+  create: (config: SubscribeChangeConfig) => VoidFunction;
+  subscribe: (callback: (update: NavigationHistoryEntry, prevLocation?: NavigationHistoryEntry | null) => void) => VoidFunction;
   navigate: (hash: string, state?: Record<string, unknown>) => void;
   replaceState: (config?: {state?: Record<string, unknown>; hash?: string;}) => void;
   goBack: VoidFunction;
   goToPrev: VoidFunction;
-  isExistPageByCurrentHash: (hash?: string) => boolean;
+  hasPage: (hash?: string) => boolean;
 }
 ```
 

@@ -11,6 +11,7 @@ export default defineConfig({
             reporter: ['text', 'json', 'html'],
             exclude : ['**/node_modules/**', '**/dist/**', '**/types/**'],
         },
+        testTimeout: 3000,
     },
     resolve: {
         alias: {

@@ -58,7 +58,7 @@ export interface HashNavigation {
   back: (options?: NavigationOptions) => NavigationResult | null;
   forward: (options?: NavigationOptions) => NavigationResult | null;
   reload: (options?: NavigationOptions) => NavigationResult;
-  updateCurrentEntry: (delta: Partial<NavigationState>) => void;
+  updateCurrentEntry: (options?: NavigationOptions, hash?: string) => void;
   
   // Event handlers
   addEventListener: (type: string, listener: EventListener) => void;
@@ -83,11 +83,13 @@ export interface SubscribeChangeConfig {
 
 export interface HashRouter {
   navigation: HashNavigation;
-  initializeAndSubscribeOnChange: (config: SubscribeChangeConfig) => VoidFunction;
-  subscribeOnListenHistory: (callback: (update: NavigationHistoryEntry, prevLocation?: NavigationHistoryEntry | null) => void) => VoidFunction;
+  create: (config: SubscribeChangeConfig) => VoidFunction;
+  subscribe: (callback: (update: NavigationHistoryEntry, prevLocation?: NavigationHistoryEntry | null) => void) => VoidFunction;
   navigate: (hash: string, state?: Record<string, unknown>) => void;
   replaceState : (config?: {state?: Record<string, unknown>; hash?: string;}) => void;
   goBack: VoidFunction;
   goToPrev: VoidFunction;
-  isExistPageByCurrentHash: (hash?: string) => boolean;
+  getHash: () => string;
+  getState: () => NavigationState | undefined;
+  hasPage: (hash?: string) => boolean;
 }

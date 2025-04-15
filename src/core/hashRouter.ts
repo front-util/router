@@ -1,3 +1,4 @@
+import { createHash } from '#src/helpers';
 import { 
     HashNavigation, 
     HashRouter, 
@@ -5,7 +6,7 @@ import {
     NavigationHistoryEntry, 
     SubscribeChangeConfig 
 } from '../types';
-import { hashNavigation as navigator } from './hashNavigation';
+import { createHashNavigation } from './hashNavigation';
 
 /**
  * Helper function to subscribe to navigation events
@@ -42,12 +43,20 @@ const subscribeToNavigationEvents = (
 
 /**
  * Creates a hash-based router that implements the HashRouter interface
- * @param hashNavigation - The navigation object to use for routing operations
+ * @param createNavigation - The function create navigation object to use for routing operations
  * @returns An object implementing the HashRouter interface
  */
-export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => {
+export const createHashRouter = (createNavigation: () => HashNavigation): HashRouter => {
     // Store the router configuration
     let routerConfig: InitializeRouterConfig | null = null;
+    let _hashNavigation: null | HashNavigation = null;
+
+    const getNavigation = () => {
+        if(!_hashNavigation) {
+            _hashNavigation = createNavigation();
+        }
+        return _hashNavigation;
+    };
 
     /**
      * Checks if a hash exists in the configured route names
@@ -68,7 +77,10 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
      * @param config - Optional configuration for the state replacement
      */
     const replaceState = (config?: { state?: Record<string, unknown>; hash?: string }): void => {
+        console.log('%c replace', 'background: #222; color: #bada55', '');
+        
         if(!config) return;
+        const hashNavigation = getNavigation();
     
         const currentEntry = hashNavigation.currentEntry.value;
     
@@ -84,23 +96,31 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
     };
 
     /**
-     * Initializes the router and subscribes to location changes
+     * Creates the router and subscribes to location changes
      * @param config - Configuration containing onChange handler and router setup
      * @returns A function to unsubscribe the listener
      */
-    const initializeAndSubscribeOnChange = (config: SubscribeChangeConfig): VoidFunction => {
+    const create = (config: SubscribeChangeConfig): VoidFunction => {
         const { onChange, config: initConfig, } = config;
+
+        // Set initial home as initial hash if it empty
+        if(!window.location.hash && initConfig.homeUrl) {
+            window.location.hash = `#${createHash(initConfig.homeUrl)}`;
+        }
   
         // Store the configuration for future use
         routerConfig = initConfig;
+        _hashNavigation = createNavigation();
   
         let prevLocation: NavigationHistoryEntry | null = null;
   
         // Subscribe to navigation events
         const unsubscribe = subscribeToNavigationEvents(
-            hashNavigation,
+            _hashNavigation,
             (entry) => {
                 // Only trigger onChange if this is a different location
+                console.log('%c lllll', 'background: #222; color: #bada55', prevLocation, entry);
+                
                 if(!prevLocation || prevLocation.url !== entry.url) {
                     onChange(entry);
                     prevLocation = entry;
@@ -109,14 +129,12 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
         );
   
         // Check current hash
-        const currentHash = hashNavigation.currentEntry.value.getHash();
-  
+        const currentHash = _hashNavigation.currentEntry.value.getHash();
+        
         // If current hash is empty, navigate to home URL
-        if(!currentHash && routerConfig.homeUrl) {
-            hashNavigation.navigate(routerConfig.homeUrl);
-        } 
-        // If current hash doesn't exist in route names, replace with home URL
-        else if(currentHash && !checkExistPage(currentHash) && routerConfig.homeUrl) {
+        if(currentHash && !checkExistPage(currentHash) && routerConfig.homeUrl) {
+            console.log('%c 111', 'background: #222; color: #bada55', currentHash);
+
             // Replace the current history entry with the home URL
             replaceState({ hash: routerConfig.homeUrl, });
         }
@@ -129,8 +147,8 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
      * @param callback - Function to call when location changes
      * @returns A function to unsubscribe the listener
      */
-    const subscribeOnListenHistory = (callback: (update: NavigationHistoryEntry, prevLocation?: NavigationHistoryEntry | null) => void): VoidFunction => {
-        return subscribeToNavigationEvents(hashNavigation, callback);
+    const subscribe = (callback: (update: NavigationHistoryEntry, prevLocation?: NavigationHistoryEntry | null) => void): VoidFunction => {
+        return subscribeToNavigationEvents(getNavigation(), callback);
     };
 
     /**
@@ -139,21 +157,21 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
      * @param state - Optional state to associate with this navigation
      */
     const navigate = (hash: string, state?: Record<string, unknown>): void => {
-        hashNavigation.navigate(hash, { state, });
+        getNavigation().navigate(hash, { state, });
     };
 
     /**
      * Navigates back in history
      */
     const goBack = (): void => {
-        hashNavigation.back();
+        getNavigation().back();
     };
 
     /**
      * Alias for goBack
      */
     const goToPrev = (): void => {
-        hashNavigation.back();
+        getNavigation().back();
     };
 
     /**
@@ -161,23 +179,29 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
      * @param hash - Optional hash to check (uses current hash if not provided)
      * @returns boolean indicating if the page exists in the configured routes
      */
-    const isExistPageByCurrentHash = (hash?: string): boolean => {
-        const hashToCheck = hash || hashNavigation.currentEntry.value.getHash();
+    const hasPage = (hash?: string): boolean => {
+        const hashToCheck = hash || getNavigation().currentEntry.value.getHash();
 
         return checkExistPage(hashToCheck);
     };
 
+    const getHash = () => getNavigation().currentEntry.value.getHash();
+
+    const getState = () => getNavigation().currentEntry.value.getState();
+
     // Return the router object with references to the functions defined in the closure
     return {
-        navigation: hashNavigation,
-        initializeAndSubscribeOnChange,
-        subscribeOnListenHistory,
+        navigation: _hashNavigation ?? getNavigation(),
+        create,
+        subscribe,
         navigate,
         replaceState,
         goBack,
         goToPrev,
-        isExistPageByCurrentHash,
+        hasPage,
+        getHash,
+        getState,
     };
 };
 
-export const hashRouter = createHashRouter(navigator);
+export const hashRouter = createHashRouter(createHashNavigation);

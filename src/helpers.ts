@@ -10,7 +10,7 @@ const generateRandomId = () => Math.random().toString(36).substring(2, 9);
 export const getHash = (url: string): string => {
     const urlObject = new URL(url);
 
-    return urlObject.hash.slice(1) || '/';
+    return urlObject.hash.slice(1).replace('/', '') || '/';
 };
 
 export const createHash = (hash: string) => `/${hash}`;

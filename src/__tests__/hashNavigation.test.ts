@@ -97,7 +97,7 @@ describe('createHashNavigation', () => {
         const nav = createHashNavigation();
     
         // Navigate with state
-        nav.navigate('', { state: { test: 'state', }, });
+        nav.navigate('/', { state: { test: 'state', }, });
     
         // State should be updated
         expect(nav.currentEntry.value.state).toEqual({ test: 'state', });
