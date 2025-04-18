@@ -89,18 +89,66 @@ describe('hashRouter', () => {
   
     describe('create', () => {
         it('should initialize the router with provided routes', () => {
+            const config = {
+                homeUrl   : 'home',
+                routeNames: ['home', 'about', 'contact'],
+            };
             const unsubscribe = router.create({
                 onChange,
-                config: {
-                    homeUrl   : 'home',
-                    routeNames: ['home', 'about', 'contact'],
-                },
+                config,
             });
       
             expect(typeof unsubscribe).toBe('function');
             expect(onChange).toHaveBeenCalledTimes(1);
             
             expect(router.getHash()).toBe('home');
+            expect(router.getConfig()).toBe(config);
+        });
+
+        it('should initialize twice', () => {
+            const config = {
+                homeUrl   : 'home',
+                routeNames: ['home', 'about', 'contact'],
+            };
+            const config2 = {
+                homeUrl   : 'about',
+                routeNames: ['home', 'about', 'contact'],
+            };
+            const onChange2 = vi.fn();
+            const onChange3 = vi.fn();
+
+            router.create({
+                onChange,
+                config,
+            });
+            router.subscribe(onChange3);
+
+            router.destroy();
+
+            expect(onChange).toHaveBeenCalledTimes(1);
+            expect(onChange3).toHaveBeenCalledTimes(1);
+            expect(router.getHash()).toBe('home');
+            expect(router.getConfig()).toBe(config);
+
+            onChange.mockReset();
+            onChange3.mockReset();
+
+            router.create({
+                onChange: onChange2,
+                config  : config2,
+            });
+      
+            expect(onChange2).toHaveBeenCalledTimes(1);
+            expect(onChange).toHaveBeenCalledTimes(0);
+            expect(router.getHash()).toBe('home');
+            expect(router.getConfig()).toBe(config2);
+            expect(router.canGoBack.value).toBeFalsy();
+            expect(router.canGoForward.value).toBeFalsy();
+            expect(router.entries.value.length).toEqual(1);
+
+            router.navigate('contact');
+
+            expect(onChange3).toHaveBeenCalledTimes(0);
         });
     
         it('should set home hash if current hash is empty', () => {      

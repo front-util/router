@@ -108,4 +108,5 @@ export interface HashRouter extends Pick<HashNavigation, 'entries' | 'canGoBack'
   getState: () => NavigationState | undefined;
   hasPage: (hash?: string) => boolean;
   destroy: VoidFunction;
+  getConfig: () => InitializeRouterConfig | null;
 }

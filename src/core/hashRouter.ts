@@ -179,6 +179,8 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
 
     const destroy = () => hashNavigation.destroy();
 
+    const getConfig = () => routerConfig;
+
     const currentEntry = computed(() => {
         const entry = hashNavigation.currentEntry.value;
         const hash = entry.getHash();
@@ -209,6 +211,7 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
         getHash,
         getState,
         destroy,
+        getConfig,
     };
 };
 
