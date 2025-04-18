@@ -50,7 +50,7 @@ describe('helpers/createHistoryEntry', () => {
             id          : expect.any(String),
             index       : 0,
             sameDocument: true,
-            state       : undefined,
+            state       : {},
             getState    : expect.any(Function),
             getHash     : expect.any(Function),
         });
