@@ -34,15 +34,16 @@ export const createHashNavigation = (): HashNavigation => {
 
     // Initialize the router state from the current location
     const initializeFromLocation = (): void => {
-        // Try to get existing state from the history API
-        const state = window.history.state;
-        const initialEntry = createHistoryEntry(window.location.href, state);
+        // Try to get existing state from the history API        
+        const state = window.history.state ?? currentEntry.value.getState();
+        
+        const initialEntry = createHistoryEntry(_currentURL.value, state);
         
         // Using batch to update multiple signals at once
         batch(() => {
+            _currentURL.value = initialEntry.url as string;
             _entries.value = [initialEntry];
             _currentIndex.value = 0;
-            _currentURL.value = initialEntry.url as string;
         });
     };
 
@@ -158,8 +159,10 @@ export const createHashNavigation = (): HashNavigation => {
         
         // Using batch to update multiple signals at once
         batch(() => {
+            if(newUrl) {
+                _currentURL.value = newUrl;
+            }
             _currentIndex.value = newCurrentIndex;
-            if(newUrl) _currentURL.value = newUrl;
             _navigations.value = navigations;
         });
         
@@ -185,6 +188,33 @@ export const createHashNavigation = (): HashNavigation => {
         _entries.value = newEntries;
         
         return updatedEntry;
+    };
+
+    const updateEntryUrl = (
+        entryIndex: number,
+        newUrl: string
+    ): NavigationHistoryEntry => {
+        const newEntries = [..._entries.value];
+        const entry = newEntries[entryIndex];
+        
+        // Create updated entry with new state
+        const updatedEntry = {
+            ...entry,
+            url: newUrl,
+        };
+        
+        // Update our entries array
+        newEntries[entryIndex] = updatedEntry;
+        _entries.value = newEntries;
+        
+        return updatedEntry;
+    };
+
+    const updateCurrentEntryHash = (hash: string) => {
+        updateEntryUrl(
+            _currentIndex.value, 
+            new URL(`#${createHash(hash)}`, window.location.href).href
+        );
     };
 
     // Public API methods
@@ -271,6 +301,7 @@ export const createHashNavigation = (): HashNavigation => {
 
     const back = (options: NavigationOptions = {}): NavigationResult | null => {
         if(!canGoBack.value) {
+            window.history.back();
             return null;
         }
         
@@ -364,10 +395,6 @@ export const createHashNavigation = (): HashNavigation => {
             _eventListeners.get(type)?.delete(listener);
         }
     };
-
-    // Initialize and set up event listeners
-    initializeFromLocation();
-    window.addEventListener('hashchange', handleHashChange);
     
     // Set up effect to synchronize URL with current entry
     const unsubscribe = effect(() => {
@@ -377,6 +404,12 @@ export const createHashNavigation = (): HashNavigation => {
             _currentURL.value = currentEntryValue.url as string;
         }
     });
+
+    const create = () => {
+        // Initialize and set up event listeners
+        initializeFromLocation();
+        window.addEventListener('hashchange', handleHashChange);
+    };
 
     const destroy = (): void => {
         window.removeEventListener('hashchange', handleHashChange);
@@ -403,7 +436,12 @@ export const createHashNavigation = (): HashNavigation => {
         // Event handlers
         addEventListener,
         removeEventListener,
+
+        // Service methods
+        updateCurrentEntryHash,
         
+        // Init
+        create,
         // Cleanup
         destroy,
     };

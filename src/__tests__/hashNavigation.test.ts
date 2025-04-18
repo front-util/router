@@ -41,16 +41,44 @@ afterEach(() => {
 });
 
 describe('createHashNavigation', () => {
-    it('should create a hash navigation instance with correct initial state', () => {
+    it('should init a hash navigation instance with correct initial state', () => {
+        const nav = createHashNavigation();
+    
+        expect(nav.currentEntry.value).toBeDefined();
+        expect(nav.currentEntry.value.url).toBe('http://localhost:5000/test');
+        expect(nav.currentEntry.value.getHash()).toBe('/');
+        
+        expect(nav.currentEntry.value.getState()).toEqual({});
+        expect(nav.entries.value.length).toBe(1);
+        expect(nav.canGoBack.value).toBe(false);
+        expect(nav.canGoForward.value).toBe(false);
+
+        nav.destroy();
+    });
+
+    it('should create a hash navigation instance with correct initial state after navigation init and navigation not empty', () => {
         const nav = createHashNavigation();
     
         expect(nav.currentEntry.value).toBeDefined();
         expect(nav.currentEntry.value.url).toBe('http://localhost:5000/test');
         expect(nav.currentEntry.value.getHash()).toBe('/');
         expect(nav.currentEntry.value.getState()).toEqual({});
-        expect(nav.entries.value.length).toBe(1);
-        expect(nav.canGoBack.value).toBe(false);
-        expect(nav.canGoForward.value).toBe(false);
+
+        nav.navigate('test1');
+        nav.navigate('test2', {state: ['test'],});
+
+        expect(nav.entries.value.length).toEqual(3);
+        expect(nav.currentEntry.value.url).toBe('http://localhost:5000/test#/test2');
+        expect(nav.currentEntry.value.getHash()).toBe('test2');
+        expect(nav.currentEntry.value.getState()).toEqual(['test']);
+
+        nav.create();
+
+        expect(nav.entries.value.length).toEqual(1);
+        expect(nav.canGoBack.value).toBeFalsy();
+        expect(nav.canGoForward.value).toBeFalsy();
+        expect(nav.currentEntry.value.url).toBe('http://localhost:5000/test#/test2');
+        expect(nav.currentEntry.value.getHash()).toBe('test2');
 
         nav.destroy();
     });

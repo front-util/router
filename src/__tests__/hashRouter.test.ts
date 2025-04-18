@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createHashRouter } from '../core/hashRouter';
-import { createHashNavigation } from '../core/hashNavigation';
+import { hashRouter, createHashRouter } from '../core/hashRouter';
+import { createHashNavigation } from '#src/core/hashNavigation';
 
 describe('hashRouter', () => {
-    let router: ReturnType<typeof createHashRouter>;
+    let router = hashRouter;
     let onChange: any;
     
     // Original window methods we'll be mocking
@@ -43,7 +43,6 @@ describe('hashRouter', () => {
                 value   : state,
                 writable: true,
             }); 
-            console.log('%c url', 'background: #222; color: #bada55', url);
             
             if(url) {
                 // Update location.hash if URL contains a hash
@@ -70,9 +69,9 @@ describe('hashRouter', () => {
         // Start with empty hash
         window.location.hash = '';
         
-        // Create new instances for each test
-        router = createHashRouter(createHashNavigation);
         onChange = vi.fn();
+
+        router = createHashRouter(createHashNavigation());
     });
   
     afterEach(() => {
@@ -84,7 +83,7 @@ describe('hashRouter', () => {
         window.history.go = originalHistoryGo;
         
         // Clear any event listeners
-        router.navigation.destroy();
+        router.destroy();
         vi.clearAllMocks();
     });
   
@@ -151,7 +150,7 @@ describe('hashRouter', () => {
   
     describe('navigate', () => {
         it('should navigate to specified hash', () => {
-            const navigateSpy = vi.spyOn(router.navigation, 'navigate');
+            const navigateSpy = vi.spyOn(router._navigation, 'navigate');
       
             router.navigate('about');
       
@@ -162,7 +161,7 @@ describe('hashRouter', () => {
     
         it('should navigate with state', () => {
             const state = { id: 123, name: 'test', };
-            const navigateSpy = vi.spyOn(router.navigation, 'navigate');
+            const navigateSpy = vi.spyOn(router._navigation, 'navigate');
       
             router.navigate('profile', state);
       
@@ -246,7 +245,7 @@ describe('hashRouter', () => {
             expect(callback).toHaveBeenCalledTimes(2);
             expect(callback).toHaveBeenLastCalledWith(
                 expect.objectContaining({
-                    getHash: expect.any(Function),
+                    url: expect.stringContaining('about'),
                 }),
                 expect.anything()
             );
@@ -274,8 +273,8 @@ describe('hashRouter', () => {
   
     describe('replaceState', () => {
         it('should update state without navigation when only state is provided', () => {
-            const updateSpy = vi.spyOn(router.navigation, 'updateCurrentEntry');
-            const navigateSpy = vi.spyOn(router.navigation, 'navigate');
+            const updateSpy = vi.spyOn(router._navigation, 'updateCurrentEntry');
+            const navigateSpy = vi.spyOn(router._navigation, 'navigate');
       
             router.replaceState({ state: { test: 'value', }, });
       
@@ -284,7 +283,7 @@ describe('hashRouter', () => {
         });
     
         it('should navigate when hash is provided', () => {
-            const navigateSpy = vi.spyOn(router.navigation, 'navigate');
+            const navigateSpy = vi.spyOn(router._navigation, 'navigate');
       
             router.replaceState({ hash: 'about', });
       
@@ -292,8 +291,8 @@ describe('hashRouter', () => {
         });
     
         it('should update state and navigate when both are provided', () => {
-            const updateSpy = vi.spyOn(router.navigation, 'updateCurrentEntry');
-            const navigateSpy = vi.spyOn(router.navigation, 'navigate');
+            const updateSpy = vi.spyOn(router._navigation, 'updateCurrentEntry');
+            const navigateSpy = vi.spyOn(router._navigation, 'navigate');
       
             router.replaceState({ 
                 state: { test: 'value', },
@@ -305,8 +304,8 @@ describe('hashRouter', () => {
         });
     
         it('should do nothing when no config is provided', () => {
-            const updateSpy = vi.spyOn(router.navigation, 'updateCurrentEntry');
-            const navigateSpy = vi.spyOn(router.navigation, 'navigate');
+            const updateSpy = vi.spyOn(router._navigation, 'updateCurrentEntry');
+            const navigateSpy = vi.spyOn(router._navigation, 'navigate');
       
             router.replaceState();
       
@@ -317,13 +316,76 @@ describe('hashRouter', () => {
   
     describe('goBack and goToPrev', () => {
         it('should both call navigation.back()', () => {
-            const backSpy = vi.spyOn(router.navigation, 'back');
+            const backSpy = vi.spyOn(router._navigation, 'back');
       
             router.goBack();
             expect(backSpy).toHaveBeenCalledTimes(1);
       
             router.goToPrev();
             expect(backSpy).toHaveBeenCalledTimes(2);
+        });
+    });
+
+    describe('get params from url', () => {
+        it('should get params with paramaters', () => {   
+            router.create({
+                onChange: () => {},
+                config  : {
+                    homeUrl   : 'home',
+                    routeNames: [
+                        'home', 
+                        'profile/:id', 
+                        'user/:name',
+                        'item/:name/info/:id'
+                    ],
+                },
+            });   
+            router.navigate('profile/222');
+            expect(router.currentEntry.value.getParams()).toEqual({id: '222',});
+            router.navigate('user/john');
+            expect(router.currentEntry.value.getParams()).toEqual({name: 'john',});
+            router.navigate('item/metric/info/222');
+            expect(router.currentEntry.value.getParams()).toEqual({
+                "id"  : "222",
+                "name": "metric",
+            });
+            router.navigate('home');
+            expect(router.currentEntry.value.getParams()).toEqual({});
+        });
+
+        it('should get params with paramaters after go back', () => {   
+            router.create({
+                onChange: () => {},
+                config  : {
+                    homeUrl   : 'home',
+                    routeNames: [
+                        'home', 
+                        'profile/:id' 
+                    ],
+                },
+            });   
+            router.navigate('profile/222');
+            expect(router.currentEntry.value.getParams()).toEqual({id: '222',});
+            router.navigate('home');
+            router.goBack();
+            expect(router.currentEntry.value.getParams()).toEqual({id: '222',});            
+        });
+    });
+
+    describe('get query from url', () => {
+        it('should get params with paramaters', () => {   
+            router.create({
+                onChange: () => {},
+                config  : {
+                    homeUrl   : 'home',
+                    routeNames: [
+                        'home', 
+                        'profile'
+                    ],
+                },
+            });   
+            router.navigate('profile?param1=test1&param2=test2');
+            expect(router.currentEntry.value.getQuery()).toEqual({ param1: 'test1', param2: 'test2', });
         });
     });
 });

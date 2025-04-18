@@ -2,7 +2,14 @@
 /* eslint-disable promise/catch-or-return */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { getHash, createHistoryEntry, createNavigationResult } from '#src/helpers';
+import { 
+    getHash, 
+    createHistoryEntry, 
+    createNavigationResult, 
+    isRouteMatch, 
+    getRouteItem, 
+    getParamsFromUrl 
+} from '#src/helpers';
 import type { NavigationHistoryEntry, NavigationState } from '#src/types';
 
 describe('helpers/getHash', () => {
@@ -183,5 +190,148 @@ describe('helpers/createNavigationResult', () => {
 
         expect(transformedCommitted).toBe('Committed: https://example.com');
         expect(transformedFinished).toBe('Finished: https://example.com');
+    });
+});
+
+describe('helpers/isRouteMatch', () => {
+    it('should match simple routes', () => {
+        expect(isRouteMatch('/users', '/users')).toBe(true);
+        expect(isRouteMatch('/dashboard', '/dashboard')).toBe(true);
+        expect(isRouteMatch('/', '/')).toBe(true);
+    });
+
+    it('should handle route parameters', () => {
+        expect(isRouteMatch('/users/:id', '/users/123')).toBe(true);
+        expect(isRouteMatch('/posts/:id', '/posts/456')).toBe(true);
+        expect(isRouteMatch('/products/:id', '/products/789')).toBe(true);
+    });
+
+    it('should handle negative numbers in parameters', () => {
+        expect(isRouteMatch('/temperature/:value', '/temperature/-10')).toBe(true);
+        expect(isRouteMatch('/position/:coord', '/position/-42')).toBe(true);
+    });
+
+    it('should return false for non-matching routes', () => {
+        expect(isRouteMatch('/users', '/posts')).toBe(false);
+        expect(isRouteMatch('/dashboard', '/settings')).toBe(false);
+    });
+
+    it('should handle null or undefined hash', () => {
+        expect(isRouteMatch('/home', null as unknown as string)).toBe(false);
+        expect(isRouteMatch('/home', undefined as unknown as string)).toBe(false);
+    });
+
+    it('should handle different route segment lengths', () => {
+        expect(isRouteMatch('/users/:id', '/users/123/settings')).toBe(false);
+        expect(isRouteMatch('/users/:id/settings', '/users/123')).toBe(false);
+    });
+});
+
+describe('helpers/getRouteItem', () => {
+    it('should return the corresponding route item for exact matches', () => {
+        const routes = {
+            '/'         : 'home',
+            '/users'    : 'users',
+            '/dashboard': 'dashboard',
+        };
+
+        expect(getRouteItem(routes, '/')).toBe('home');
+        expect(getRouteItem(routes, '/users')).toBe('users');
+        expect(getRouteItem(routes, '/dashboard')).toBe('dashboard');
+    });
+
+    it('should return the corresponding route item for parameterized routes', () => {
+        const routes = {
+            '/users'    : 'users-list',
+            '/users/:id': 'user-details',
+            '/posts/:id': 'post-details',
+        };
+
+        expect(getRouteItem(routes, '/users')).toBe('users-list');
+        expect(getRouteItem(routes, '/users/123')).toBe('user-details');
+        expect(getRouteItem(routes, '/posts/456')).toBe('post-details');
+    });
+
+    it('should return undefined for routes that do not match', () => {
+        const routes = {
+            '/'         : 'home',
+            '/users'    : 'users',
+            '/dashboard': 'dashboard',
+        };
+
+        expect(getRouteItem(routes, '/settings')).toBeUndefined();
+        expect(getRouteItem(routes, '/products')).toBeUndefined();
+    });
+
+    it('should work with complex objects as route values', () => {
+        const routes = {
+            '/'         : { component: 'Home', title: 'Home Page', },
+            '/users'    : { component: 'UsersList', title: 'Users', },
+            '/users/:id': { component: 'UserDetails', title: 'User Details', },
+        };
+
+        expect(getRouteItem(routes, '/')).toEqual({ component: 'Home', title: 'Home Page', });
+        expect(getRouteItem(routes, '/users')).toEqual({ component: 'UsersList', title: 'Users', });
+        expect(getRouteItem(routes, '/users/123')).toEqual({ component: 'UserDetails', title: 'User Details', });
+    });
+
+    it('should handle empty route maps', () => {
+        const routes = {};
+
+        expect(getRouteItem(routes, '/any-route')).toBeUndefined();
+    });
+});
+
+describe('helpers/getParamsFromUrl', () => {
+    it('should extract parameter values from URL', () => {
+        expect(getParamsFromUrl('/users/:id', '/users/123')).toEqual({ id: '123', });
+        expect(getParamsFromUrl('/posts/:postId', '/posts/456')).toEqual({ postId: '456', });
+        expect(getParamsFromUrl('/products/:category/:id', '/products/electronics/789')).toEqual({
+            category: 'electronics',
+            id      : '789',
+        });
+    });
+
+    it('should handle negative numbers as parameter values', () => {
+        expect(getParamsFromUrl('/temperature/:value', '/temperature/-10')).toEqual({ value: '-10', });
+        expect(getParamsFromUrl('/position/:coord', '/position/-42')).toEqual({ coord: '-42', });
+    });
+
+    it('should handle routes with no parameters', () => {
+        expect(getParamsFromUrl('/users', '/users')).toEqual({});
+        expect(getParamsFromUrl('/dashboard', '/dashboard')).toEqual({});
+        expect(getParamsFromUrl('/', '/')).toEqual({});
+    });
+
+    it('should return empty object when segment count does not match', () => {
+        expect(getParamsFromUrl('/users/:id', '/users')).toEqual({});
+        expect(getParamsFromUrl('/users', '/users/123')).toEqual({});
+        expect(getParamsFromUrl('/products/:id', '/products/123/details')).toEqual({});
+    });
+
+    it('should handle multiple parameters', () => {
+        expect(getParamsFromUrl('/users/:userId/posts/:postId', '/users/123/posts/456')).toEqual({
+            userId: '123',
+            postId: '456',
+        });
+    });
+
+    it('should handle parameters with non-numeric values', () => {
+        expect(getParamsFromUrl('/categories/:name', '/categories/electronics')).toEqual({
+            name: 'electronics',
+        });
+        expect(getParamsFromUrl('/users/:username', '/users/john-doe')).toEqual({
+            username: 'john-doe',
+        });
+    });
+
+    it('should handle mixed static and parametrized segments', () => {
+        expect(getParamsFromUrl('/users/:id/profile', '/users/123/profile')).toEqual({
+            id: '123',
+        });
+        expect(getParamsFromUrl('/repos/:owner/:repo/issues', '/repos/facebook/react/issues')).toEqual({
+            owner: 'facebook',
+            repo : 'react',
+        });
     });
 });

@@ -2,6 +2,10 @@ import { ReadonlySignal } from "@preact/signals";
 
 export type NavigationState = Record<string, unknown>;
 
+export interface QueryParams {
+  [key: string]: string
+}
+
 /**
  * Interface for NavigationHistoryEntry based on the Navigation API
  */
@@ -64,8 +68,12 @@ export interface HashNavigation {
   addEventListener: (type: string, listener: EventListener) => void;
   removeEventListener: (type: string, listener: EventListener) => void;
   
+  // Init
+  create: () => void;
   // Cleanup
   destroy: () => void;
+
+  updateCurrentEntryHash: (hash: string) => void;
 }
 
 /**
@@ -81,15 +89,23 @@ export interface SubscribeChangeConfig {
   config: InitializeRouterConfig;
 }
 
-export interface HashRouter {
-  navigation: HashNavigation;
+export interface RouterHistoryEntry extends NavigationHistoryEntry {
+  pattern?: string;
+  getParams: <T extends Record<string, string> = Record<string, string>>() => T;
+  getQuery : <T extends QueryParams>() => T,
+}
+
+export interface HashRouter extends Pick<HashNavigation, 'entries' | 'canGoBack' | 'canGoForward'> {
+  _navigation: HashNavigation;
+  currentEntry: ReadonlySignal<RouterHistoryEntry>;
   create: (config: SubscribeChangeConfig) => VoidFunction;
   subscribe: (callback: (update: NavigationHistoryEntry, prevLocation?: NavigationHistoryEntry | null) => void) => VoidFunction;
-  navigate: (hash: string, state?: Record<string, unknown>) => void;
+  navigate: (hash: string, state?: Record<string, unknown>) => NavigationResult;
   replaceState : (config?: {state?: Record<string, unknown>; hash?: string;}) => void;
   goBack: VoidFunction;
   goToPrev: VoidFunction;
   getHash: () => string;
   getState: () => NavigationState | undefined;
   hasPage: (hash?: string) => boolean;
+  destroy: VoidFunction;
 }
