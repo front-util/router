@@ -151,9 +151,3 @@ export const parseQueryParams = <T extends QueryParams = QueryParams>(urlPart: s
   
     return queryParams as T;
 };
-  
-// Пример использования:
-const url = '/test?param1=value1&param2=value2';
-const queryParams = parseQueryParams(url);
-
-console.log(queryParams); // { param1: 'value1', param2: 'value2' }
