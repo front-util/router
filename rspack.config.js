@@ -52,5 +52,5 @@ export default defineConfig({
       '#src': path.resolve(__dirname, 'src'),
     },
   },
-  externals: ['history', '@front-utils/utils', '@preact/signals'],
+  externals: ['@preact/signals'],
 });

@@ -94,7 +94,6 @@
   },
   "peerDependencies": {},
   "dependencies": {
-    "@front-utils/utils": "^0.2.6",
     "@preact/signals": "^2.0.3"
   }
 }
