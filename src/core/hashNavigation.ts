@@ -24,8 +24,10 @@ export const createHashNavigation = (): HashNavigation => {
     const _entries = signal<NavigationHistoryEntry[]>([createHistoryEntry(window.location.href)]);
     const _currentIndex = signal<number>(0);
     const _navigations = signal<Map<string, NavigationResult>>(new Map());
-    const _eventListeners = new Map<string, Set<EventListener>>();
-
+    
+    // Storage for active subscriptions
+    const _subscriptions = new Set<VoidFunction>();
+    
     // Public computed signals that reflect the router state
     const currentEntry = computed(() => _entries.value[_currentIndex.value]);
     const entries = computed(() => [..._entries.value]);
@@ -35,7 +37,7 @@ export const createHashNavigation = (): HashNavigation => {
     // Initialize the router state from the current location
     const initializeFromLocation = (): void => {
         // Try to get existing state from the history API        
-        const state = window.history.state ?? currentEntry.value.getState();
+        const state = window.history.state ?? currentEntry.value.state;
         
         const initialEntry = createHistoryEntry(_currentURL.value, state);
         
@@ -45,54 +47,6 @@ export const createHashNavigation = (): HashNavigation => {
             _entries.value = [initialEntry];
             _currentIndex.value = 0;
         });
-    };
-
-    const dispatchEvent = (type: string, event: Event): void => {
-        if(_eventListeners.has(type)) {
-            const listeners = _eventListeners.get(type);
-            
-            if(listeners) {
-                listeners.forEach((listener) => listener(event));
-            }
-        }
-    };
-
-    // Create and dispatch a custom navigate event
-    const dispatchNavigateEvent = (): void => {
-        const currentDestination = currentEntry.value;
-            
-        // Create a custom event that mimics NavigateEvent
-        const event = new CustomEvent('navigate', {
-            bubbles   : true,
-            cancelable: true,
-        });
-            
-        // Add NavigateEvent properties
-        Object.defineProperties(event, {
-            destination: {
-                value   : currentDestination,
-                writable: false,
-            },
-            canIntercept: {
-                value   : true,
-                writable: false,
-            },
-            intercept: {
-                value: (options: { handler?: () => Promise<void> | void } = {}) => {
-                    if(options.handler) {
-                        options.handler();
-                    }
-                },
-                writable: false,
-            },
-            scroll: {
-                value   : () => window.scrollTo(0, 0),
-                writable: false,
-            },
-        });
-            
-        // Dispatch the event
-        dispatchEvent('navigate', event);
     };
 
     // Handle hash change events from the window
@@ -138,9 +92,6 @@ export const createHashNavigation = (): HashNavigation => {
                 _currentIndex.value = newEntries.length - 1;
             });
         }
-
-        // Dispatch navigate event
-        dispatchNavigateEvent();
     };
 
     // Helper function to update navigation state
@@ -197,10 +148,11 @@ export const createHashNavigation = (): HashNavigation => {
         const newEntries = [..._entries.value];
         const entry = newEntries[entryIndex];
         
-        // Create updated entry with new state
+        // Create updated entry with new url
         const updatedEntry = {
             ...entry,
-            url: newUrl,
+            url : newUrl,
+            hash: getHash(newUrl),
         };
         
         // Update our entries array
@@ -211,16 +163,64 @@ export const createHashNavigation = (): HashNavigation => {
     };
 
     const updateCurrentEntryHash = (hash: string) => {
-        updateEntryUrl(
+        return updateEntryUrl(
             _currentIndex.value, 
             new URL(`#${createHash(hash)}`, window.location.href).href
         );
     };
-
+    
+    /**
+     * Subscribe to navigation changes with current and previous history entries
+     * and current hash route
+     * @param callback - Callback function called when navigation changes
+     * @returns Unsubscribe function
+     */
+    const subscribe = (
+        callback: (
+            entry: NavigationHistoryEntry, 
+            prevEntry: NavigationHistoryEntry | null, 
+            hash: string
+        ) => void
+    ): VoidFunction => {        
+        // Get the current entry before setting up the effect
+        const current = currentEntry.value;
+        
+        // Track the previous entry for change detection
+        // Initialize with current to avoid double call
+        let previousEntry: NavigationHistoryEntry | null = current;
+        
+        // Call the callback with the current value on initial subscription
+        callback(current, null, current.hash);
+        
+        // Create an effect that tracks changes in the currentEntry signal
+        const unsubscribe = effect(() => {
+            const entry = currentEntry.value;
+            const currentHash = entry.hash;
+            
+            // Call the callback with current and previous entries
+            if(previousEntry !== entry) {
+                callback(entry, previousEntry, currentHash);
+                previousEntry = entry;
+            }
+        });
+        
+        // Create a complete unsubscribe function that also removes the subscription from storage
+        const completeUnsubscribe = () => {
+            unsubscribe();
+            _subscriptions.delete(completeUnsubscribe);
+        };
+        
+        // Save the subscription in storage
+        _subscriptions.add(completeUnsubscribe);
+        
+        // Return the unsubscribe function
+        return completeUnsubscribe;
+    };
+    
     // Public API methods
     const navigate = (hash: string, options: NavigationOptions = {}): NavigationResult => {
         // Create full URL by resolving against current location
-        const originalHash = currentEntry.value.getHash();
+        const originalHash = currentEntry.value.hash;
         const fullUrl = new URL(`#${createHash(hash)}`, window.location.href).href;
         
         // Only navigate if the hash part actually changed
@@ -248,12 +248,8 @@ export const createHashNavigation = (): HashNavigation => {
                 _currentURL.value = fullUrl;
             });
             
-            // Update navigation state and dispatch navigate event
-            const result = updateNavigationState(destination, newEntries.length - 1);
-
-            dispatchNavigateEvent();
-            
-            return result;
+            // Update navigation state
+            return updateNavigationState(destination, newEntries.length - 1);
         } else {
             // If hash didn't change, check if state changed
             const currentEntryValue = currentEntry.value;
@@ -382,20 +378,6 @@ export const createHashNavigation = (): HashNavigation => {
         updateEntryState(currentIndex, options.state as NavigationState || null);
     };
 
-    // Event handling
-    const addEventListener = (type: string, listener: EventListener): void => {
-        if(!_eventListeners.has(type)) {
-            _eventListeners.set(type, new Set());
-        }
-        _eventListeners.get(type)?.add(listener);
-    };
-
-    const removeEventListener = (type: string, listener: EventListener): void => {
-        if(_eventListeners.has(type)) {
-            _eventListeners.get(type)?.delete(listener);
-        }
-    };
-    
     // Set up effect to synchronize URL with current entry
     const unsubscribe = effect(() => {
         const currentEntryValue = currentEntry.value;
@@ -413,7 +395,12 @@ export const createHashNavigation = (): HashNavigation => {
 
     const destroy = (): void => {
         window.removeEventListener('hashchange', handleHashChange);
-        _eventListeners.clear();
+        
+        // Cancel all active subscriptions
+        _subscriptions.forEach((unsub) => unsub());
+        _subscriptions.clear();
+        
+        // Cancel internal synchronization effect
         unsubscribe();
     };
 
@@ -433,10 +420,9 @@ export const createHashNavigation = (): HashNavigation => {
         reload,
         updateCurrentEntry,
         
-        // Event handlers
-        addEventListener,
-        removeEventListener,
-
+        // Subscription method
+        subscribe,
+        
         // Service methods
         updateCurrentEntryHash,
         

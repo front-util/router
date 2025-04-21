@@ -20,27 +20,10 @@ const subscribeToNavigationEvents = (
     navigation: HashNavigation,
     callback: (entry: NavigationHistoryEntry, prev?: NavigationHistoryEntry | null) => void
 ): VoidFunction => {
-    let prevLocation: NavigationHistoryEntry | null = null;
-
-    const handleNavigate = (event: Event) => {
-        const navEvent = event as unknown as { entry: NavigationHistoryEntry };
-        const currentEntry = navEvent.entry || navigation.currentEntry.value;
-  
-        callback(currentEntry, prevLocation);
-        prevLocation = currentEntry;
-    };
-
-    // Initial call with current entry
-    callback(navigation.currentEntry.value);
-    prevLocation = navigation.currentEntry.value;
-
-    // Subscribe to navigate events
-    navigation.addEventListener('navigate', handleNavigate);
-
-    // Return unsubscribe function
-    return () => {
-        navigation.removeEventListener('navigate', handleNavigate);
-    };
+    // Use the new subscribe method instead of events
+    return navigation.subscribe((entry, prevEntry, _hash) => {
+        callback(entry, prevEntry);
+    });
 };
 
 /**
@@ -78,9 +61,9 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
             hashNavigation.updateCurrentEntry(config.state);
         }
     
-        if(config.hash && config.hash !== currentEntry.getHash()) {
+        if(config.hash && config.hash !== currentEntry.hash) {
             hashNavigation.navigate(config.hash, { 
-                state: config.state || currentEntry.getState(),
+                state: config.state || currentEntry.state,
             });
         }
     };
@@ -119,7 +102,7 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
         );
   
         // Check current hash
-        const currentHash = hashNavigation.currentEntry.value.getHash();
+        const currentHash = hashNavigation.currentEntry.value.hash;
         
         // If current hash is empty, navigate to home URL
         if(currentHash && !checkExistPage(currentHash) && routerConfig.homeUrl) {
@@ -168,14 +151,14 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
      * @returns boolean indicating if the page exists in the configured routes
      */
     const hasPage = (hash?: string): boolean => {
-        const hashToCheck = hash || hashNavigation.currentEntry.value.getHash();
+        const hashToCheck = hash || hashNavigation.currentEntry.value.hash;
 
         return checkExistPage(hashToCheck);
     };
 
-    const getHash = () => hashNavigation.currentEntry.value.getHash();
+    const getHash = () => hashNavigation.currentEntry.value.hash;
 
-    const getState = () => hashNavigation.currentEntry.value.getState();
+    const getState = () => hashNavigation.currentEntry.value.state;
 
     const destroy = () => hashNavigation.destroy();
 
@@ -183,7 +166,7 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
 
     const currentEntry = computed(() => {
         const entry = hashNavigation.currentEntry.value;
-        const hash = entry.getHash();
+        const hash = entry.hash;
         const pattern = getRouteItem(getRouteMap(routerConfig?.routeNames ?? []), hash);
 
         return {
@@ -194,13 +177,21 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
         };
     });
 
+    const state = computed(() => currentEntry.value.state);
+
+    const hash = computed(() => currentEntry.value.hash);
+
     // Return the router object with references to the functions defined in the closure
     return {
         _navigation : hashNavigation,
         entries     : hashNavigation.entries,
         currentEntry,
+        state,
+        hash,
         canGoBack   : hashNavigation.canGoBack,
         canGoForward: hashNavigation.canGoForward,
+        getHash,
+        getState,
         create,
         subscribe,
         navigate,
@@ -208,8 +199,6 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
         goBack,
         goToPrev,
         hasPage,
-        getHash,
-        getState,
         destroy,
         getConfig,
     };

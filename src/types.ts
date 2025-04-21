@@ -18,9 +18,7 @@ export interface NavigationHistoryEntry {
     // State storage for entries
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     state?: any;
-    // Method to retrieve the state
-    getState<T extends NavigationState = NavigationState>(): T | undefined;
-    getHash(): string;
+    hash: string;
   }
   
 /**
@@ -64,9 +62,14 @@ export interface HashNavigation {
   reload: (options?: NavigationOptions) => NavigationResult;
   updateCurrentEntry: (options?: NavigationOptions, hash?: string) => void;
   
-  // Event handlers
-  addEventListener: (type: string, listener: EventListener) => void;
-  removeEventListener: (type: string, listener: EventListener) => void;
+  // Subscription method
+  subscribe: (
+    callback: (
+      entry: NavigationHistoryEntry,
+      prevEntry: NavigationHistoryEntry | null,
+      hash: string
+    ) => void
+  ) => VoidFunction;
   
   // Init
   create: () => void;
@@ -98,6 +101,8 @@ export interface RouterHistoryEntry extends NavigationHistoryEntry {
 export interface HashRouter extends Pick<HashNavigation, 'entries' | 'canGoBack' | 'canGoForward'> {
   _navigation: HashNavigation;
   currentEntry: ReadonlySignal<RouterHistoryEntry>;
+  state: ReadonlySignal<NavigationState>;
+  hash: ReadonlySignal<string>;
   create: (config: SubscribeChangeConfig) => VoidFunction;
   subscribe: (callback: (update: NavigationHistoryEntry, prevLocation?: NavigationHistoryEntry | null) => void) => VoidFunction;
   navigate: (hash: string, state?: Record<string, unknown>) => NavigationResult;

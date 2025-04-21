@@ -51,8 +51,7 @@ describe('helpers/createHistoryEntry', () => {
             index       : 0,
             sameDocument: true,
             state       : {},
-            getState    : expect.any(Function),
-            getHash     : expect.any(Function),
+            hash        : '/',
         });
     });
 
@@ -62,7 +61,7 @@ describe('helpers/createHistoryEntry', () => {
         const entry = createHistoryEntry(url, state);
 
         expect(entry.state).toEqual(state);
-        expect(entry.getState()).toEqual(state);
+        expect(entry.state).toEqual(state);
     });
 
     it('should set the index correctly', () => {
@@ -92,12 +91,7 @@ describe('helpers/createHistoryEntry', () => {
         const state = { data: 'test-data', };
         const entry = createHistoryEntry('https://example.com', state);
     
-        expect(entry.getState()).toBe(state);
-    
-        // Test that getState is bound to the entry
-        const { getState, } = entry;
-
-        expect(getState()).toBe(state);
+        expect(entry.state).toBe(state);
     });
 });
 

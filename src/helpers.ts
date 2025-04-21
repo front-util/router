@@ -21,23 +21,15 @@ export const createHistoryEntry = (
     state: NavigationState = {}, 
     index: number = 0
 ): NavigationHistoryEntry => {
-    const entry = {
+    return {
         url,
         key         : generateRandomId(),
         id          : generateRandomId(),
         index,
         sameDocument: true,
         state,
-        getState    : function<T extends NavigationState = NavigationState>(): T | undefined {        
-            return this.state as T;
-        },
-        getHash: () => getHash(url),
+        hash        : getHash(url),
     };
-    
-    // Bind the getState method to the entry object
-    entry.getState = entry.getState.bind(entry);
-    
-    return entry;
 };
 
 export const createNavigationResult = (destination: NavigationHistoryEntry): NavigationResult => {
