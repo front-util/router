@@ -1,4 +1,3 @@
-
 # Router Utility
 
 A lightweight, flexible hash-based router implementation for modern web applications.
@@ -9,6 +8,7 @@ A lightweight, flexible hash-based router implementation for modern web applicat
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [Installation](#installation)
+  - [Browser Compatibility](#browser-compatibility)
   - [API Documentation](#api-documentation)
     - [HashNavigation](#hashnavigation)
       - [Properties](#properties)
@@ -16,19 +16,27 @@ A lightweight, flexible hash-based router implementation for modern web applicat
     - [HashRouter](#hashrouter)
       - [Properties](#properties-1)
       - [Methods](#methods-1)
+    - [RouterHistoryEntry](#routerhistoryentry)
+      - [Properties](#properties-2)
+      - [Methods](#methods-2)
   - [Usage Examples](#usage-examples)
     - [Basic Setup](#basic-setup)
     - [Advanced Usage](#advanced-usage)
     - [Handling Route Changes](#handling-route-changes)
     - [State Management](#state-management)
+    - [Route Parameters and Queries](#route-parameters-and-queries)
+    - [TypeScript Usage](#typescript-usage)
     - [Integration with Frameworks](#integration-with-frameworks)
       - [React Integration](#react-integration)
       - [Vue Integration](#vue-integration)
   - [Contract Interfaces](#contract-interfaces)
     - [HashNavigation Interface](#hashnavigation-interface)
     - [HashRouter Interface](#hashrouter-interface)
+    - [Router History Entry Interface](#router-history-entry-interface)
     - [Configuration Interfaces](#configuration-interfaces)
     - [Navigation History Interfaces](#navigation-history-interfaces)
+  - [Contributing](#contributing)
+  - [Troubleshooting](#troubleshooting)
   - [License](#license)
 
 ## Overview
@@ -50,6 +58,18 @@ yarn add @front-utils/router
 # Using bun
 bun add @front-utils/router
 ```
+
+## Browser Compatibility
+
+Router Utility is compatible with all modern browsers that support the History API:
+
+- Chrome 49+
+- Firefox 45+
+- Safari 10+
+- Edge 12+
+- Opera 36+
+
+For older browsers, consider using a polyfill for the History API.
 
 ## API Documentation
 
@@ -73,9 +93,10 @@ HashNavigation provides direct access to browser history and navigation function
 - `back(options)` - Navigate backward in history
 - `forward(options)` - Navigate forward in history
 - `reload(options)` - Reload the current entry
-- `updateCurrentEntry(delta)` - Update the state of the current entry
-- `addEventListener(type, listener)` - Add an event listener
-- `removeEventListener(type, listener)` - Remove an event listener
+- `updateCurrentEntry(options, hash)` - Update the state of the current entry, optionally updating the hash
+- `updateCurrentEntryHash(hash)` - Update only the hash of the current entry
+- `create()` - Initialize the navigation system
+- `subscribe(callback)` - Subscribe to navigation changes with callback receiving current entry, previous entry, and hash
 - `destroy()` - Clean up all listeners and resources
 
 ### HashRouter
@@ -84,7 +105,13 @@ HashRouter provides a higher-level API for common routing operations, with easie
 
 #### Properties
 
-- `navigation` - Reference to the underlying HashNavigation instance
+- `_navigation` - Reference to the underlying HashNavigation instance
+- `currentEntry` - A read-only signal containing the current router history entry with extended functionality
+- `state` - A read-only signal providing access to the current navigation state
+- `hash` - A read-only signal providing access to the current hash
+- `entries` - A read-only signal containing all history entries (inherited from HashNavigation)
+- `canGoBack` - A read-only signal indicating if navigation backward is possible (inherited from HashNavigation)
+- `canGoForward` - A read-only signal indicating if navigation forward is possible (inherited from HashNavigation)
 
 #### Methods
 
@@ -94,7 +121,25 @@ HashRouter provides a higher-level API for common routing operations, with easie
 - `replaceState(config)` - Replace the current state and/or hash
 - `goBack()` - Navigate back in history
 - `goToPrev()` - Alias for goBack
+- `getHash()` - Get the current hash
+- `getState()` - Get the current state
 - `hasPage(hash?)` - Check if a page exists in configured routes
+- `destroy()` - Clean up all listeners and resources
+- `getConfig()` - Get the current router configuration
+
+### RouterHistoryEntry
+
+RouterHistoryEntry extends NavigationHistoryEntry with additional router-specific functionality.
+
+#### Properties
+
+- All properties from NavigationHistoryEntry (`url`, `key`, `id`, `index`, `sameDocument`, `state`, `hash`)
+- `pattern` - The matched route pattern, if any
+
+#### Methods
+
+- `getParams<T>()` - Get URL parameters extracted from the route pattern
+- `getQuery<T>()` - Get query parameters from the URL
 
 ## Usage Examples
 
@@ -106,7 +151,7 @@ import { hashRouter } from '@front-utils/router';
 // Initialize the router with routes configuration
 const unsubscribe = hashRouter.create({
   onChange: (location) => {
-    console.log('Route changed:', location.getHash());
+    console.log('Route changed:', location.hash);
     // Update your UI based on the new location
   },
   config: {
@@ -130,8 +175,8 @@ import { hashRouter } from '@front-utils/router';
 // Initialize with more complex state handling
 hashRouter.create({
   onChange: (location) => {
-    const hash = location.getHash();
-    const state = location.getState();
+    const hash = location.hash;
+    const state = location.state;
     
     console.log('Current route:', hash);
     console.log('Route state:', state);
@@ -167,7 +212,7 @@ import { hashRouter } from '@front-utils/router';
 
 // Create a route handler function
 const handleRouteChange = (location) => {
-  const hash = location.getHash();
+  const hash = location.hash;
   const appContainer = document.getElementById('app');
   
   // Simple route-based content rendering
@@ -223,8 +268,8 @@ import { hashRouter } from '@front-utils/router';
 // Initialize with a product catalog setup
 hashRouter.create({
   onChange: (location) => {
-    const hash = location.getHash();
-    const state = location.getState();
+    const hash = location.hash;
+    const state = location.state;
     
     if (hash === 'product') {
       const productId = state?.productId;
@@ -248,14 +293,124 @@ function viewProduct(productId) {
 // Update state without changing the route
 function updateProductOptions(options) {
   hashRouter.replaceState({ 
-    state: { ...hashRouter.navigation.currentEntry.value.getState(), options } 
+    state: { ...hashRouter.getState(), options } 
   });
 }
 
 // Example of accessing state from the current entry
 function getCurrentProductId() {
-  const state = hashRouter.navigation.currentEntry.value.getState();
+  const state = hashRouter.getState();
   return state?.productId;
+}
+```
+
+### Route Parameters and Queries
+
+```typescript
+import { hashRouter } from '@front-utils/router';
+
+// Setup routes with parameters
+hashRouter.create({
+  onChange: (location) => {
+    // Get route parameters using the extended RouterHistoryEntry
+    const params = hashRouter.currentEntry.value.getParams();
+    const query = hashRouter.currentEntry.value.getQuery();
+    
+    console.log('Route params:', params);
+    console.log('Query params:', query);
+    
+    // Example: Rendering different views based on params and query
+    if (location.hash.includes('users')) {
+      if (params.id) {
+        renderUserDetails(params.id, query.tab || 'profile');
+      } else {
+        renderUsersList(query.page || '1', query.sort || 'name');
+      }
+    }
+  },
+  config: {
+    homeUrl: 'home',
+    // Define routes including parameter patterns
+    routeNames: [
+      'home', 
+      'users', 
+      'users/:id', 
+      'products/:category/:id'
+    ]
+  }
+});
+
+// Navigate to parameterized routes
+hashRouter.navigate('users/123?tab=settings');
+hashRouter.navigate('products/electronics/laptop-15?color=silver&price=999');
+
+// Helper function to access params in components
+function useRouteParams() {
+  return hashRouter.currentEntry.value.getParams();
+}
+
+// Helper function to access query parameters
+function useQueryParams() {
+  return hashRouter.currentEntry.value.getQuery();
+}
+```
+
+### TypeScript Usage
+
+```typescript
+import { hashRouter, NavigationHistoryEntry, InitializeRouterConfig, RouterHistoryEntry } from '@front-utils/router';
+
+// Type-safe route configuration
+interface AppRoutes {
+  home: undefined;
+  product: { id: string };
+  checkout: { items: string[] };
+}
+
+// Define your routes
+const routeConfig: InitializeRouterConfig = {
+  homeUrl: 'home',
+  routeNames: ['home', 'product', 'checkout']
+};
+
+// Type-safe route handler
+function handleRouteChange(location: NavigationHistoryEntry): void {
+  const hash = location.hash;
+  
+  // Access state in a type-safe way
+  const state = hashRouter.getState();
+  
+  switch (hash) {
+    case 'home':
+      renderHomePage();
+      break;
+    case 'product':
+      if (state && 'id' in state) {
+        renderProductPage(state.id as string);
+      }
+      break;
+    case 'checkout':
+      if (state && 'items' in state) {
+        renderCheckoutPage(state.items as string[]);
+      }
+      break;
+  }
+}
+
+// Access route parameters with proper typing
+function useTypedParams<T>() {
+  return hashRouter.currentEntry.value.getParams<T>();
+}
+
+// Initialize with type-safe configuration
+hashRouter.create({
+  onChange: handleRouteChange,
+  config: routeConfig
+});
+
+// Type-safe navigation with state
+function navigateToProduct(productId: string): void {
+  hashRouter.navigate('product', { id: productId });
 }
 ```
 
@@ -264,40 +419,45 @@ function getCurrentProductId() {
 #### React Integration
 
 ```tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { hashRouter } from '@front-utils/router';
 
 // Custom hook for using the router
 function useHashRouter() {
-  const [currentRoute, setCurrentRoute] = useState('');
-  const [routeState, setRouteState] = useState({});
-
+  const [routerInstance, setRouterInstance] = useState(null);
+  
+  // Initialize once
   useEffect(() => {
     const unsubscribe = hashRouter.create({
       onChange: (location) => {
-        setCurrentRoute(location.getHash());
-        setRouteState(location.getState() || {});
+        // Force a re-render on location change
+        setRouterInstance({});
       },
       config: {
         homeUrl: 'home',
-        routeNames: ['home', 'users', 'settings']
+        routeNames: ['home', 'users', 'users/:id', 'settings']
       }
     });
     
     return unsubscribe;
   }, []);
-
-  return {
-    currentRoute,
-    routeState,
+  
+  // Return consistent references to current values and methods
+  return useMemo(() => ({
+    currentRoute: hashRouter.getHash(),
+    routeState: hashRouter.getState() || {},
+    currentEntry: hashRouter.currentEntry.value,
+    params: hashRouter.currentEntry.value.getParams(),
+    query: hashRouter.currentEntry.value.getQuery(),
     navigate: hashRouter.navigate,
-    goBack: hashRouter.goBack
-  };
+    goBack: hashRouter.goBack,
+    canGoBack: hashRouter.canGoBack.value
+  }), [routerInstance]);
 }
 
 // Example component
 function App() {
-  const { currentRoute, routeState, navigate, goBack } = useHashRouter();
+  const { currentRoute, params, query, navigate, goBack, canGoBack } = useHashRouter();
   
   return (
     <div>
@@ -305,12 +465,13 @@ function App() {
         <button onClick={() => navigate('home')}>Home</button>
         <button onClick={() => navigate('users')}>Users</button>
         <button onClick={() => navigate('settings')}>Settings</button>
-        <button onClick={goBack}>Back</button>
+        {canGoBack && <button onClick={goBack}>Back</button>}
       </nav>
       
       <main>
         {currentRoute === 'home' && <HomePage />}
-        {currentRoute === 'users' && <UsersPage userId={routeState.userId} />}
+        {currentRoute === 'users' && !params.id && <UsersPage page={query.page} />}
+        {currentRoute === 'users' && params.id && <UserDetailsPage userId={params.id} />}
         {currentRoute === 'settings' && <SettingsPage />}
       </main>
     </div>
@@ -323,28 +484,35 @@ function App() {
 ```javascript
 // router.js
 import { hashRouter } from '@front-utils/router';
-import { ref, readonly } from 'vue';
-
-const currentRoute = ref('');
-const routeState = ref({});
+import { ref, readonly, computed } from 'vue';
 
 // Initialize the router
 const unsubscribe = hashRouter.create({
-  onChange: (location) => {
-    currentRoute.value = location.getHash();
-    routeState.value = location.getState() || {};
+  onChange: () => {
+    // Vue's reactivity will pick up changes through the computed properties
   },
   config: {
     homeUrl: 'home',
-    routeNames: ['home', 'about', 'contact']
+    routeNames: ['home', 'about', 'contact', 'users/:id']
   }
 });
 
+// Create reactive references to router state
+const currentHash = computed(() => hashRouter.getHash());
+const currentState = computed(() => hashRouter.getState() || {});
+const routeParams = computed(() => hashRouter.currentEntry.value.getParams());
+const queryParams = computed(() => hashRouter.currentEntry.value.getQuery());
+const canGoBack = computed(() => hashRouter.canGoBack.value);
+
 export default {
-  currentRoute: readonly(currentRoute),
-  routeState: readonly(routeState),
+  currentHash: readonly(currentHash),
+  currentState: readonly(currentState),
+  routeParams: readonly(routeParams),
+  queryParams: readonly(queryParams),
+  canGoBack: readonly(canGoBack),
   navigate: hashRouter.navigate,
-  goBack: hashRouter.goBack
+  goBack: hashRouter.goBack,
+  destroy: unsubscribe
 };
 
 // App.vue
@@ -354,10 +522,14 @@ export default {
       <button @click="navigate('home')">Home</button>
       <button @click="navigate('about')">About</button>
       <button @click="navigate('contact')">Contact</button>
-      <button @click="goBack">Back</button>
+      <button @click="navigate(`users/${userId}`)">User Profile</button>
+      <button v-if="canGoBack" @click="goBack">Back</button>
     </nav>
     
-    <component :is="currentComponent" v-bind="routeState"></component>
+    <component :is="currentComponent" 
+               :params="routeParams" 
+               :query="queryParams"
+               v-bind="currentState"></component>
   </div>
 </template>
 
@@ -366,21 +538,30 @@ import router from './router';
 import HomePage from './components/HomePage.vue';
 import AboutPage from './components/AboutPage.vue';
 import ContactPage from './components/ContactPage.vue';
+import UserPage from './components/UserPage.vue';
 
 export default {
   setup() {
+    const userId = '123'; // Example user ID
+    
     const getComponent = () => {
-      switch (router.currentRoute.value) {
-        case 'home': return HomePage;
-        case 'about': return AboutPage;
-        case 'contact': return ContactPage;
-        default: return HomePage;
-      }
+      const hash = router.currentHash.value;
+      
+      if (hash === 'home') return HomePage;
+      if (hash === 'about') return AboutPage;
+      if (hash === 'contact') return ContactPage;
+      if (hash.startsWith('users/')) return UserPage;
+      
+      return HomePage; // Default
     };
     
     return {
+      userId,
       currentComponent: computed(() => getComponent()),
-      routeState: router.routeState,
+      routeParams: router.routeParams,
+      queryParams: router.queryParams,
+      currentState: router.currentState,
+      canGoBack: router.canGoBack,
       navigate: router.navigate,
       goBack: router.goBack
     };
@@ -409,29 +590,55 @@ export interface HashNavigation {
   back: (options?: NavigationOptions) => NavigationResult | null;
   forward: (options?: NavigationOptions) => NavigationResult | null;
   reload: (options?: NavigationOptions) => NavigationResult;
-  updateCurrentEntry: (delta: Partial<NavigationState>) => void;
+  updateCurrentEntry: (options?: NavigationOptions, hash?: string) => void;
   
-  // Event handlers
-  addEventListener: (type: string, listener: EventListener) => void;
-  removeEventListener: (type: string, listener: EventListener) => void;
+  // Subscription method
+  subscribe: (
+    callback: (
+      entry: NavigationHistoryEntry,
+      prevEntry: NavigationHistoryEntry | null,
+      hash: string
+    ) => void
+  ) => VoidFunction;
   
+  // Init
+  create: () => void;
   // Cleanup
   destroy: () => void;
+
+  updateCurrentEntryHash: (hash: string) => void;
 }
 ```
 
 ### HashRouter Interface
 
 ```typescript
-export interface HashRouter {
-  navigation: HashNavigation;
+export interface HashRouter extends Pick<HashNavigation, 'entries' | 'canGoBack' | 'canGoForward'> {
+  _navigation: HashNavigation;
+  currentEntry: ReadonlySignal<RouterHistoryEntry>;
+  state: ReadonlySignal<NavigationState>;
+  hash: ReadonlySignal<string>;
   create: (config: SubscribeChangeConfig) => VoidFunction;
   subscribe: (callback: (update: NavigationHistoryEntry, prevLocation?: NavigationHistoryEntry | null) => void) => VoidFunction;
-  navigate: (hash: string, state?: Record<string, unknown>) => void;
+  navigate: (hash: string, state?: Record<string, unknown>) => NavigationResult;
   replaceState: (config?: {state?: Record<string, unknown>; hash?: string;}) => void;
   goBack: VoidFunction;
   goToPrev: VoidFunction;
+  getHash: () => string;
+  getState: () => NavigationState | undefined;
   hasPage: (hash?: string) => boolean;
+  destroy: VoidFunction;
+  getConfig: () => InitializeRouterConfig | null;
+}
+```
+
+### Router History Entry Interface
+
+```typescript
+export interface RouterHistoryEntry extends NavigationHistoryEntry {
+  pattern?: string;
+  getParams: <T extends Record<string, string> = Record<string, string>>() => T;
+  getQuery : <T extends QueryParams>() => T,
 }
 ```
 
@@ -461,8 +668,7 @@ export interface NavigationHistoryEntry {
   index: number;
   sameDocument: boolean;
   state?: any;
-  getState<T extends NavigationState = NavigationState>(): T | undefined;
-  getHash(): string;
+  hash: string;
 }
 
 export interface NavigationResult {
@@ -474,7 +680,39 @@ export interface NavigationOptions {
   state?: unknown;
   info?: unknown;
 }
+
+export interface QueryParams {
+  [key: string]: string
+}
 ```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Troubleshooting
+
+**Hash changes not being detected**
+- Make sure the router is initialized before any navigation occurs
+- Check that the route names are correctly defined in your configuration
+
+**State not persisting between navigations**
+- Ensure you're using `navigate()` with state parameter correctly
+- Verify you're retrieving state with `getState()` method
+
+**Route parameters not working**
+- Ensure your route patterns are correctly defined in the `routeNames` array
+- Check that you're accessing parameters with `getParams()` method from the router entry
+
+**Conflicts with other routers**
+- This router uses hash-based navigation, so avoid using other hash-change listeners
+- If using with another framework's router, ensure they're not both handling the same routes
 
 ## License
 
