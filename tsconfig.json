@@ -12,6 +12,7 @@
     "baseUrl": ".",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
+    "jsx": "react",
     "paths": {
       "#src/*": [
         "./src/*"

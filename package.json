@@ -1,7 +1,7 @@
 {
   "name": "@front-utils/router",
   "version": "0.3.0",
-  "description": "Client simple hash router",
+  "description": "Client simple hash router with signals",
   "author": "IVGolubev",
   "license": "ISC",
   "type": "module",
@@ -21,6 +21,10 @@
     "./hashNavigation": {
       "types": "./types/core/hashNavigation.d.ts",
       "default": "./dist/hashNavigation.js"
+    },
+    "./react": {
+      "types": "./types/react/ClientRouter.d.ts",
+      "default": "./dist/react/ClientRouter.js"
     },
     "./types": "./types/index.d.ts",
     "./types/*": "./types/*.d.ts"
@@ -60,7 +64,8 @@
     "Router",
     "Navigation router",
     "Hash router",
-    "Simple router"
+    "Simple router",
+    "Signals router"
   ],
   "engines": {
     "node": ">=18.0.0"
@@ -73,6 +78,8 @@
     "@types/eslint-plugin-jsx-a11y": "^6.9.0",
     "@types/eslint__js": "^8.42.3",
     "@types/node": "^22.10.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
     "@vitest/coverage-v8": "^3.1.1",
     "eslint": "^9.13.0",
     "eslint-import-resolver-alias": "^1.1.2",
@@ -87,12 +94,20 @@
     "globals": "^15.11.0",
     "happy-dom": "^12.10.3",
     "lint-staged": "^15.2.10",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "simple-git-hooks": "^2.11.1",
     "typescript": "^5.6.3",
     "typescript-eslint": ">=8.0.0",
     "vitest": "^3.1.1"
   },
-  "peerDependencies": {},
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "optionalDependencies": {
+    "@preact/signals-react": "^3.0.1"
+  },
   "dependencies": {
     "@preact/signals": "^2.0.3"
   }

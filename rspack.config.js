@@ -12,6 +12,7 @@ export default defineConfig({
     // Add direct exports for tree shaking
     hashRouter: './src/core/hashRouter.ts',
     hashNavigation: './src/core/hashNavigation.ts',
+    ClientRouter: './src/react/ClientRouter.tsx',
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -52,5 +53,11 @@ export default defineConfig({
       '#src': path.resolve(__dirname, 'src'),
     },
   },
-  externals: ['@preact/signals'],
+  externals: [
+    '@preact/signals', 
+    '@preact/signals-react', 
+    '@preact/signals-react/runtime', 
+    'react', 
+    'react-dom'
+  ],
 });

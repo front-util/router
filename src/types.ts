@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ReadonlySignal } from "@preact/signals";
 
 export type NavigationState = Record<string, unknown>;
@@ -16,7 +17,7 @@ export interface NavigationHistoryEntry {
     index: number;
     sameDocument: boolean;
     // State storage for entries
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     state?: any;
     hash: string;
   }
@@ -116,4 +117,17 @@ export interface HashRouter extends Pick<HashNavigation, 'entries' | 'canGoBack'
   hasPage: (hash?: string) => boolean;
   destroy: VoidFunction;
   getConfig: () => InitializeRouterConfig | null;
+}
+
+export type RouteComponent = React.ComponentType<any>;
+
+export interface ClientRouterProps {
+    className?: string;
+    /** Instance of the hash router */
+    router: HashRouter;
+    /** Map of route paths to React components */
+    routes: Map<string, RouteComponent>;
+    homeUrl: string;
+    /** Component to render when route is not found */
+    notFoundComponent: RouteComponent;
 }
