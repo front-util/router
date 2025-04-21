@@ -4,27 +4,12 @@ import {
     HashNavigation, 
     HashRouter, 
     InitializeRouterConfig, 
+    NavigationCb, 
     NavigationHistoryEntry, 
     QueryParams, 
     SubscribeChangeConfig 
 } from '../types';
 import { createHashNavigation } from './hashNavigation';
-
-/**
- * Helper function to subscribe to navigation events
- * @param navigation - The navigation object
- * @param callback - Function to call when navigation occurs
- * @returns A function to unsubscribe the listener
- */
-const subscribeToNavigationEvents = (
-    navigation: HashNavigation,
-    callback: (entry: NavigationHistoryEntry, prev?: NavigationHistoryEntry | null) => void
-): VoidFunction => {
-    // Use the new subscribe method instead of events
-    return navigation.subscribe((entry, prevEntry, _hash) => {
-        callback(entry, prevEntry);
-    });
-};
 
 /**
  * Creates a hash-based router that implements the HashRouter interface
@@ -47,6 +32,23 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
         const normalizedHash = hash.startsWith('#') ? hash.substring(1) : hash;
 
         return routerConfig.routeNames.includes(normalizedHash);
+    };
+
+    const getNavigationStatus = (hash: string) => checkExistPage(hash) ? 'success' : 'notfound';
+
+    /**
+     * Helper function to subscribe to navigation events
+     * @param navigation - The navigation object
+     * @param callback - Function to call when navigation occurs
+     * @returns A function to unsubscribe the listener
+     */
+    const subscribeToNavigationEvents = (
+        callback: NavigationCb
+    ): VoidFunction => {
+        // Use the new subscribe method instead of events
+        return hashNavigation.subscribe((entry, prevEntry, hash) => {
+            callback(entry, prevEntry, getNavigationStatus(hash));
+        });
     };
 
     /**
@@ -91,11 +93,10 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
   
         // Subscribe to navigation events
         const unsubscribe = subscribeToNavigationEvents(
-            hashNavigation,
-            (entry) => {
+            (entry, prevEntry, navigationStatus) => {
                 // Only trigger onChange if this is a different location                
                 if(!prevLocation || prevLocation.url !== entry.url) {                    
-                    onChange(entry);
+                    onChange(entry, prevEntry, navigationStatus);
                     prevLocation = entry;
                 }
             }
@@ -118,8 +119,8 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
      * @param callback - Function to call when location changes
      * @returns A function to unsubscribe the listener
      */
-    const subscribe = (callback: (update: NavigationHistoryEntry, prevLocation?: NavigationHistoryEntry | null) => void): VoidFunction => {
-        return subscribeToNavigationEvents(hashNavigation, callback);
+    const subscribe = (callback: NavigationCb): VoidFunction => {
+        return subscribeToNavigationEvents(callback);
     };
 
     /**

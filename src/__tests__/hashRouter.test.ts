@@ -295,7 +295,8 @@ describe('hashRouter', () => {
                 expect.objectContaining({
                     url: expect.stringContaining('about'),
                 }),
-                expect.anything()
+                expect.anything(),
+                'notfound'
             );
         });
     

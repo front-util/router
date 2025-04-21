@@ -8,6 +8,9 @@
         "outDir": "./dist",
         "rootDir": "./src",
         "moduleResolution": "node",
+        "paths": {
+            "#src/*": ["./src/*"]
+        }
     },
     "include": [
         "./src/**/*"

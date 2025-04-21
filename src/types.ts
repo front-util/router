@@ -87,8 +87,10 @@ export interface InitializeRouterConfig {
   routeNames: string[];
 }
 
+export type NavigationCb = (entry: NavigationHistoryEntry, prev: NavigationHistoryEntry | null, navigationStatus: 'success' | 'notfound') => void;
+
 export interface SubscribeChangeConfig {
-  onChange: (loc: NavigationHistoryEntry) => void;
+  onChange: NavigationCb;
   config: InitializeRouterConfig;
 }
 
@@ -104,7 +106,7 @@ export interface HashRouter extends Pick<HashNavigation, 'entries' | 'canGoBack'
   state: ReadonlySignal<NavigationState>;
   hash: ReadonlySignal<string>;
   create: (config: SubscribeChangeConfig) => VoidFunction;
-  subscribe: (callback: (update: NavigationHistoryEntry, prevLocation?: NavigationHistoryEntry | null) => void) => VoidFunction;
+  subscribe: (callback: NavigationCb) => VoidFunction;
   navigate: (hash: string, state?: Record<string, unknown>) => NavigationResult;
   replaceState : (config?: {state?: Record<string, unknown>; hash?: string;}) => void;
   goBack: VoidFunction;
