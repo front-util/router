@@ -328,4 +328,10 @@ describe('helpers/getParamsFromUrl', () => {
             repo : 'react',
         });
     });
+
+    it('should handle parameters with query params', () => {
+        expect(getParamsFromUrl('/categories/:name', '/categories/electronics?testQuery=test')).toEqual({
+            name: 'electronics',
+        });
+    });
 });

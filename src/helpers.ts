@@ -116,9 +116,11 @@ export const getParamsFromUrl = (pattern: string, hash: string): Record<string, 
             const paramName = patternSegment.substring(1);
             // Get the corresponding value from the URL
             const paramValue = urlSegments[i];
+            // Remove query
+            const normalizedValue = paramValue.split('?')[0];
 
             // Add to the params object
-            params[paramName] = paramValue;
+            params[paramName] = normalizedValue;
         }
     }
     

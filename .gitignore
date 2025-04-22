@@ -26,5 +26,6 @@ yarn-error.log*
 build
 temp
 dist
+examples-dist
 types
 .qodo

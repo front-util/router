@@ -20,13 +20,13 @@
     },
     "types": [
       "node",
-      "bun"
     ]
   },
   "exclude": [
     "node_modules",
     "dist",
-    ".vscode"
+    ".vscode",
+    "./examples"
   ],
   "include": [
     "./src/**/*",

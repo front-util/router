@@ -1,3 +1,4 @@
+
 # Router Utility
 
 A lightweight, flexible hash-based router implementation for modern web applications.
@@ -19,6 +20,9 @@ A lightweight, flexible hash-based router implementation for modern web applicat
     - [RouterHistoryEntry](#routerhistoryentry)
       - [Properties](#properties-2)
       - [Methods](#methods-2)
+    - [ClientRouter](#clientrouter)
+      - [Props](#props)
+      - [Usage](#usage)
   - [Usage Examples](#usage-examples)
     - [Basic Setup](#basic-setup)
     - [Advanced Usage](#advanced-usage)
@@ -28,6 +32,7 @@ A lightweight, flexible hash-based router implementation for modern web applicat
     - [TypeScript Usage](#typescript-usage)
     - [Integration with Frameworks](#integration-with-frameworks)
       - [React Integration](#react-integration)
+      - [Using ClientRouter Component](#using-clientrouter-component)
       - [Vue Integration](#vue-integration)
   - [Contract Interfaces](#contract-interfaces)
     - [HashNavigation Interface](#hashnavigation-interface)
@@ -45,6 +50,7 @@ This utility provides a hash-based navigation system that can be used to create 
 
 1. **HashNavigation** - A low-level API for managing browser history and hash-based navigation
 2. **HashRouter** - A higher-level abstraction that provides an easy-to-use router interface
+3. **ClientRouter** - A React component for declarative route rendering
 
 ## Installation
 
@@ -140,6 +146,28 @@ RouterHistoryEntry extends NavigationHistoryEntry with additional router-specifi
 
 - `getParams<T>()` - Get URL parameters extracted from the route pattern
 - `getQuery<T>()` - Get query parameters from the URL
+
+### ClientRouter
+
+ClientRouter is a React component that provides a declarative way to define and render routes in your React application. It automatically handles route changes, component rendering, and passing route parameters as props.
+
+#### Props
+
+- `router`: *(HashRouter)* - An instance of HashRouter to use for navigation
+- `routes`: *(Map<string, React.ComponentType<any>>)* - A Map of route patterns to React components
+- `homeUrl`: *(string)* - The default route to redirect to when no route matches
+- `notFoundComponent`: *(React.ComponentType<any>)* - Component to render when no route matches
+- `className`: *(string, optional)* - CSS class to apply to the router container element
+
+#### Usage
+
+The ClientRouter simplifies route management in React applications by:
+
+1. Automatically subscribing to route changes
+2. Rendering the appropriate component for the current route
+3. Passing route parameters as props to the rendered component
+4. Handling "not found" routes with a custom component
+5. Cleaning up subscriptions when unmounted
 
 ## Usage Examples
 
@@ -474,6 +502,247 @@ function App() {
         {currentRoute === 'users' && params.id && <UserDetailsPage userId={params.id} />}
         {currentRoute === 'settings' && <SettingsPage />}
       </main>
+    </div>
+  );
+}
+```
+
+#### Using ClientRouter Component
+
+The `ClientRouter` component provides a declarative way to define and manage routes in your React application:
+
+```tsx
+import React, { useEffect } from 'react';
+import { hashRouter, ClientRouter } from '@front-utils/router';
+
+// Define page components
+const HomePage = () => <div>Welcome to Home Page</div>;
+const AboutPage = () => <div>About Us</div>;
+const UserPage = ({ userId }) => <div>User Profile for User {userId}</div>;
+const NotFoundPage = () => <div>404 - Page Not Found</div>;
+
+function App() {
+  
+  // Create a map of routes to components
+  const routes = new Map([
+    ['home', HomePage],
+    ['about', AboutPage],
+    ['user/:userId', UserPage]
+  ]);
+  
+  return (
+    <div className="app">
+      <nav>
+        <button onClick={() => hashRouter.navigate('home')}>Home</button>
+        <button onClick={() => hashRouter.navigate('about')}>About</button>
+        <button onClick={() => hashRouter.navigate('user/123')}>User Profile</button>
+      </nav>
+      
+      <main>
+        <ClientRouter
+          router={hashRouter}
+          routes={routes}
+          homeUrl="home"
+          notFoundComponent={NotFoundPage}
+          className="main-content"
+        />
+      </main>
+    </div>
+  );
+}
+
+export default App;
+```
+
+**Advanced ClientRouter Examples:**
+
+1. **With TypeScript and route parameters:**
+
+```tsx
+import React, { useEffect } from 'react';
+import { hashRouter, ClientRouter } from '@front-utils/router';
+
+interface UserProfileProps {
+  userId: string;
+  tab?: string;
+}
+
+interface ProductProps {
+  categoryId: string;
+  productId: string;
+  color?: string;
+}
+
+// Page components
+const HomePage = () => <div>Home Page</div>;
+const AboutPage = () => <div>About Page</div>;
+const UserProfile = ({ userId, tab = 'profile' }: UserProfileProps) => (
+  <div>
+    <h1>User {userId}</h1>
+    <div>Current tab: {tab}</div>
+  </div>
+);
+const ProductPage = ({ categoryId, productId, color }: ProductProps) => (
+  <div>
+    <h1>Product: {productId}</h1>
+    <div>Category: {categoryId}</div>
+    {color && <div>Selected color: {color}</div>}
+  </div>
+);
+const NotFoundPage = () => <div>Page Not Found</div>;
+
+function App() {
+
+  const routes = new Map([
+    ['home', HomePage],
+    ['about', AboutPage],
+    ['users/:userId', UserProfile],
+    ['products/:categoryId/:productId', ProductPage]
+  ]);
+  
+  return (
+    <div>
+      <nav>
+        <button onClick={() => hashRouter.navigate('home')}>Home</button>
+        <button onClick={() => hashRouter.navigate('about')}>About</button>
+        <button onClick={() => hashRouter.navigate('users/123?tab=settings')}>
+          User 123
+        </button>
+        <button onClick={() => 
+          hashRouter.navigate('products/electronics/laptop?color=silver')
+        }>
+          Silver Laptop
+        </button>
+      </nav>
+      
+      <ClientRouter
+        router={hashRouter}
+        routes={routes}
+        homeUrl="home"
+        notFoundComponent={NotFoundPage}
+      />
+    </div>
+  );
+}
+```
+
+2. **With React Context for better organization:**
+
+```tsx
+import React, { createContext, useContext, useEffect } from 'react';
+import { hashRouter, ClientRouter } from '@front-utils/router';
+
+// Create context
+const RouterContext = createContext(hashRouter);
+
+// Router provider component
+function RouterProvider({ children }) {
+  return (
+    <RouterContext.Provider value={hashRouter}>
+      {children}
+    </RouterContext.Provider>
+  );
+}
+
+// Custom hook for router access
+function useRouter() {
+  return useContext(RouterContext);
+}
+
+// Navigation component
+function Navigation() {
+  const router = useRouter();
+  
+  return (
+    <nav>
+      <button onClick={() => router.navigate('home')}>Home</button>
+      <button onClick={() => router.navigate('dashboard')}>Dashboard</button>
+      <button onClick={() => router.navigate('settings')}>Settings</button>
+      {router.canGoBack.value && (
+        <button onClick={() => router.goBack()}>Back</button>
+      )}
+    </nav>
+  );
+}
+
+// Page components
+const HomePage = () => <h1>Home</h1>;
+const DashboardPage = () => <h1>Dashboard</h1>;
+const ProfilePage = ({ userId }) => <h1>Profile: {userId}</h1>;
+const SettingsPage = () => <h1>Settings</h1>;
+const NotFoundPage = () => <h1>Page Not Found</h1>;
+
+// Main app component
+function MainApp() {
+  const router = useRouter();
+  const routes = new Map([
+    ['home', HomePage],
+    ['dashboard', DashboardPage],
+    ['profile/:userId', ProfilePage],
+    ['settings', SettingsPage]
+  ]);
+  
+  return (
+    <div className="app">
+      <Navigation />
+      <ClientRouter
+        router={router}
+        routes={routes}
+        homeUrl="home"
+        notFoundComponent={NotFoundPage}
+      />
+    </div>
+  );
+}
+
+// Root component with provider
+export default function App() {
+  return (
+    <RouterProvider>
+      <MainApp />
+    </RouterProvider>
+  );
+}
+```
+
+3. **With Code Splitting:**
+
+```tsx
+import React, { Suspense, lazy, useEffect } from 'react';
+import { hashRouter, ClientRouter } from '@front-utils/router';
+
+// Lazy loaded components
+const HomePage = lazy(() => import('./pages/Home'));
+const AboutPage = lazy(() => import('./pages/About'));
+const UserProfilePage = lazy(() => import('./pages/UserProfile'));
+const NotFoundPage = lazy(() => import('./pages/NotFound'));
+
+// Loading component
+const Loading = () => <div className="loading">Loading...</div>;
+
+function App() {  
+  const routes = new Map([
+    ['home', HomePage],
+    ['about', AboutPage],
+    ['user/:userId', UserProfilePage]
+  ]);
+  
+  return (
+    <div className="app">
+      <nav>
+        <button onClick={() => hashRouter.navigate('home')}>Home</button>
+        <button onClick={() => hashRouter.navigate('about')}>About</button>
+        <button onClick={() => hashRouter.navigate('user/123')}>User Profile</button>
+      </nav>
+      
+      <Suspense fallback={<Loading />}>
+        <ClientRouter
+          router={hashRouter}
+          routes={routes}
+          homeUrl="home"
+          notFoundComponent={NotFoundPage}
+        />
+      </Suspense>
     </div>
   );
 }

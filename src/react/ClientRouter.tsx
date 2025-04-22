@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { memo, useEffect, useState } from 'react';
 import { useSignals } from '@preact/signals-react/runtime';
 
-import { ClientRouterProps, RouteComponent } from '#src/types';
+import { ClientRouterProps } from '#src/types';
 
 /**
  * ClientRouter component for React applications
  * Renders components based on the current hash route
  */
-export const ClientRouter: React.FC<ClientRouterProps> = ({ 
+export const ClientRouter = memo<ClientRouterProps>(({ 
     className,
     router, 
     routes, 
@@ -15,7 +15,7 @@ export const ClientRouter: React.FC<ClientRouterProps> = ({
     notFoundComponent: NotFound, 
 }) => {
     useSignals();
-    const [Component, setComponent] = useState<RouteComponent | null>(null);
+    const [hash, setHash] = useState<string | undefined>(undefined);
 
     useEffect(() => {
         // Subscribe to route changes
@@ -24,14 +24,8 @@ export const ClientRouter: React.FC<ClientRouterProps> = ({
                 homeUrl,
                 routeNames: [...routes.keys()],
             },
-            onChange: (entry, _, navigationStatus) => {
-                const CurrentComponent = routes.get(entry.hash);
-
-                if(navigationStatus === 'notfound' || !CurrentComponent) {
-                    setComponent(NotFound);
-                    return;
-                }
-                setComponent(CurrentComponent);
+            onChange: (entry) => {
+                setHash(entry.hash);
             },
         });
 
@@ -41,14 +35,11 @@ export const ClientRouter: React.FC<ClientRouterProps> = ({
             router.destroy();
         };
     }, [NotFound, homeUrl, router, routes]);
-
-    if(!Component) {
-        return null;
-    }
+    const Component = (hash ? routes.get(hash) : null) ?? NotFound;
 
     return (
         <div className={className}>
             <Component {...router.currentEntry.value.getParams()} />
         </div>
     );
-};
+});

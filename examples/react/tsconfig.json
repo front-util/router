@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": { 
+    "paths": {
+      "#src/*": [
+        "../../src/*"
+      ],
+    }
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".vscode"
+  ],
+  "include": [
+    "../../src",
+    "./**/*"
+  ]
+}

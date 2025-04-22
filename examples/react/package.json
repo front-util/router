@@ -1,0 +1,51 @@
+{
+  "name": "examples",
+  "version": "0.0.0",
+  "description": "",
+  "author": "IVGolubev",
+  "license": "ISC",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://git@github.com:front-util/router.git"
+  },
+  "scripts": {
+    "start": "vite",
+    "check-lint": "eslint --max-warnings=0 --fix",
+    "check-types": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "@front-utils/linter": "^0.9.6",
+    "@types/eslint-plugin-jsx-a11y": "^6.9.0",
+    "@types/eslint__js": "^8.42.3",
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.4.1",
+    "css-loader": "^6.8.1",
+    "eslint": "^9.13.0",
+    "eslint-import-resolver-alias": "^1.1.2",
+    "eslint-import-resolver-typescript": "^3.6.3",
+    "eslint-plugin-compat": "^6.0.1",
+    "eslint-plugin-filenames": "^1.3.2",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-optimize-regex": "^1.2.1",
+    "eslint-plugin-promise": ">=6.0.0",
+    "eslint-plugin-sonarjs": "^1.0.4",
+    "style-loader": "^4.0.0",
+    "typescript": "^5.8.3",
+    "typescript-eslint": ">=8.0.0",
+    "vite": "^6.3.2",
+    "vitest": "^3.1.1",
+    "vite-plugin-circular-dependency": "0.5.0",
+    "@preact/signals": "^2.0.3",
+    "@preact/signals-react": "^3.0.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  }
+}

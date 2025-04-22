@@ -36,6 +36,7 @@
     "check-lint": "eslint --max-warnings=0 --fix",
     "check-types": "tsc --noEmit",
     "test": "vitest run",
+    "validate": "bun run check-lint & bun run check-types & bun run test",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "build": "rm -rf dist && rm -rf types && bun run build:types && bun run build:rspack",
@@ -68,19 +69,21 @@
     "Signals router"
   ],
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=16.8.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
     "@front-utils/linter": "^0.9.6",
-    "@rspack/cli": "^0.5.6",
-    "@rspack/core": "^0.5.6",
+    "@rspack/cli": "^1.3.5",
+    "@rspack/core": "^1.3.5",
     "@types/eslint-plugin-jsx-a11y": "^6.9.0",
     "@types/eslint__js": "^8.42.3",
     "@types/node": "^22.10.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.4.1",
     "@vitest/coverage-v8": "^3.1.1",
+    "css-loader": "^6.8.1",
     "eslint": "^9.13.0",
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-import-resolver-typescript": "^3.6.3",
@@ -94,16 +97,19 @@
     "globals": "^15.11.0",
     "happy-dom": "^12.10.3",
     "lint-staged": "^15.2.10",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "react": "*",
+    "react-dom": "*",
     "simple-git-hooks": "^2.11.1",
-    "typescript": "^5.6.3",
+    "style-loader": "^4.0.0",
+    "typescript": "^5.8.3",
     "typescript-eslint": ">=8.0.0",
-    "vitest": "^3.1.1"
+    "vitest": "^3.1.1",
+    "vite": "^6.3.2",
+    "vite-plugin-circular-dependency": "0.5.0"
   },
   "peerDependencies": {
-    "react": ">=16.8.0",
-    "react-dom": ">=16.8.0"
+    "react": "*",
+    "react-dom": "*"
   },
   "optionalDependencies": {
     "@preact/signals-react": "^3.0.1"
