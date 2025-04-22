@@ -9,8 +9,8 @@ import {
     isRouteMatch, 
     getRouteItem, 
     getParamsFromUrl 
-} from '#src/helpers';
-import type { NavigationHistoryEntry, NavigationState } from '#src/types';
+} from '../helpers';
+import type { NavigationHistoryEntry, NavigationState } from '../types';
 
 describe('helpers/getHash', () => {
     it('should extract hash from URL', () => {

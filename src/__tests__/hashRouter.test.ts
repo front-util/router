@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { hashRouter, createHashRouter } from '../core/hashRouter';
-import { createHashNavigation } from '#src/core/hashNavigation';
+import { createHashNavigation } from '../core/hashNavigation';
 
 describe('hashRouter', () => {
     let router = hashRouter;

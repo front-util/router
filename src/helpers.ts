@@ -3,7 +3,7 @@ import type {
     NavigationState, 
     NavigationHistoryEntry, 
     QueryParams
-} from '#src/types';
+} from './types';
 
 // Utility functions
 const generateRandomId = () => Math.random().toString(36).substring(2, 9);

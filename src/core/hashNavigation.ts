@@ -6,13 +6,13 @@ import type {
     NavigationHistoryEntry, 
     NavigationOptions, 
     HashNavigation
-} from '#src/types';
+} from '../types';
 import { 
     createHistoryEntry, 
     createNavigationResult, 
     getHash, 
     createHash 
-} from '#src/helpers';
+} from '../helpers';
 
 /**
  * Implementation of hash-based router core using Preact signals

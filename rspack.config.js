@@ -49,9 +49,6 @@ export default defineConfig({
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
-    alias: {
-      '#src': path.resolve(__dirname, 'src'),
-    },
   },
   externals: [
     '@preact/signals', 

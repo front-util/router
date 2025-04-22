@@ -1,6 +1,6 @@
 import { computed } from '@preact/signals';
 
-import { createHash, getParamsFromUrl, getRouteItem, getRouteMap, parseQueryParams } from '#src/helpers';
+import { createHash, getParamsFromUrl, getRouteItem, getRouteMap, parseQueryParams } from '../helpers';
 
 import { 
     HashNavigation, 

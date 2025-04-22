@@ -1,7 +1,7 @@
 import React, { memo, useEffect, useState } from 'react';
 import { useSignals } from '@preact/signals-react/runtime';
 
-import { ClientRouterProps } from '#src/types';
+import { ClientRouterProps } from '../types';
 
 /**
  * ClientRouter component for React applications

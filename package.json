@@ -1,6 +1,6 @@
 {
   "name": "@front-utils/router",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Client simple hash router with signals",
   "author": "IVGolubev",
   "license": "ISC",
@@ -33,9 +33,6 @@
     },
     "./types": "./types/index.d.ts",
     "./types/*": "./types/*.d.ts"
-  },
-  "imports": {
-    "#src/*": "./src/*"
   },
   "scripts": {
     "check-lint": "eslint --max-warnings=0 --fix",

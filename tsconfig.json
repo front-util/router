@@ -13,11 +13,6 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "jsx": "react",
-    "paths": {
-      "#src/*": [
-        "./src/*"
-      ],
-    },
     "types": [
       "node",
     ]

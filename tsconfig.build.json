@@ -9,9 +9,6 @@
         "outDir": "./dist",
         "rootDir": "./src",
         "moduleResolution": "bundler",
-        "paths": {
-            "#src/*": ["./src/*"]
-        }
     },
     "include": [
         "./src/**/*"
