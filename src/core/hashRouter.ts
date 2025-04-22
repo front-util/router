@@ -161,7 +161,7 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
 
     const getHash = () => hashNavigation.currentEntry.value.hash;
 
-    const getState = () => hashNavigation.currentEntry.value.state;
+    const getState = <T>() => hashNavigation.currentEntry.value.state as T;
 
     const destroy = () => hashNavigation.destroy();
 
