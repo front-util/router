@@ -38,7 +38,10 @@ export const ClientRouter = memo<ClientRouterProps>(({
     const Component = (hash ? routes.get(hash) : null) ?? NotFound;
 
     return (
-        <div className={className}>
+        <div 
+            className={className}
+            key={hash}
+        >
             <Component {...router.currentEntry.value.getParams()} />
         </div>
     );
