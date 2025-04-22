@@ -188,6 +188,7 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
     return {
         _navigation : hashNavigation,
         entries     : hashNavigation.entries,
+        prevEntry   : hashNavigation.prevEntry,
         currentEntry,
         state,
         hash,

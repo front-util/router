@@ -33,6 +33,9 @@ export const createHashNavigation = (): HashNavigation => {
     const entries = computed(() => [..._entries.value]);
     const canGoBack = computed(() => _currentIndex.value > 0);
     const canGoForward = computed(() => _currentIndex.value < _entries.value.length - 1);
+    const prevEntry = computed(() => {
+        return _currentIndex.value > 0 ? _entries.value[_currentIndex.value - 1] : null;
+    });
 
     // Initialize the router state from the current location
     const initializeFromLocation = (): void => {
@@ -408,6 +411,7 @@ export const createHashNavigation = (): HashNavigation => {
     return {
         // Public signals
         currentEntry,
+        prevEntry,
         entries,
         canGoBack,
         canGoForward,

@@ -51,6 +51,7 @@ export interface NavigationOptions {
 export interface HashNavigation {
   // Public signals
   currentEntry: ReadonlySignal<NavigationHistoryEntry>;
+  prevEntry: ReadonlySignal<NavigationHistoryEntry | null>;
   entries: ReadonlySignal<NavigationHistoryEntry[]>;
   canGoBack: ReadonlySignal<boolean>;
   canGoForward: ReadonlySignal<boolean>;
@@ -104,6 +105,7 @@ export interface RouterHistoryEntry extends NavigationHistoryEntry {
 export interface HashRouter extends Pick<HashNavigation, 'entries' | 'canGoBack' | 'canGoForward'> {
   _navigation: HashNavigation;
   currentEntry: ReadonlySignal<RouterHistoryEntry>;
+  prevEntry: ReadonlySignal<NavigationHistoryEntry | null>;
   state: ReadonlySignal<NavigationState>;
   hash: ReadonlySignal<string>;
   create: (config: SubscribeChangeConfig) => VoidFunction;
