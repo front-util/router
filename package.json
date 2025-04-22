@@ -1,6 +1,6 @@
 {
   "name": "@front-utils/router",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Client simple hash router with signals",
   "author": "IVGolubev",
   "license": "ISC",
@@ -13,18 +13,22 @@
   "exports": {
     ".": {
       "types": "./types/index.d.ts",
+      "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
     "./hashRouter": {
       "types": "./types/core/hashRouter.d.ts",
+      "import": "./dist/hashRouter.js",
       "default": "./dist/hashRouter.js"
     },
     "./hashNavigation": {
       "types": "./types/core/hashNavigation.d.ts",
+      "import": "./dist/hashNavigation.js",
       "default": "./dist/hashNavigation.js"
     },
     "./react": {
       "types": "./types/react/ClientRouter.d.ts",
+      "import": "./dist/react/ClientRouter.js",
       "default": "./dist/react/ClientRouter.js"
     },
     "./types": "./types/index.d.ts",
