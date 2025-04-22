@@ -1,6 +1,6 @@
 {
   "name": "@front-utils/router",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Client simple hash router with signals",
   "author": "IVGolubev",
   "license": "ISC",
