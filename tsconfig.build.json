@@ -1,13 +1,14 @@
 {
     "extends": "./tsconfig.json",
     "compilerOptions": {
+        "allowImportingTsExtensions": true,
         "declaration": true,
         "declarationMap": true,
         "declarationDir": "./types",
         "emitDeclarationOnly": true,
         "outDir": "./dist",
         "rootDir": "./src",
-        "moduleResolution": "node16",
+        "moduleResolution": "bundler",
         "paths": {
             "#src/*": ["./src/*"]
         }
