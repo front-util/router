@@ -32,8 +32,9 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
     
         // Remove the leading '#' if present for comparison
         const normalizedHash = hash.startsWith('#') ? hash.substring(1) : hash;
+        const pattern = getRouteItem(getRouteMap(routerConfig?.routeNames ?? []), normalizedHash);
 
-        return routerConfig.routeNames.includes(normalizedHash);
+        return !!pattern;
     };
 
     const getNavigationStatus = (hash: string) => checkExistPage(hash) ? 'success' : 'notfound';

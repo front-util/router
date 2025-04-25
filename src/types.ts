@@ -128,7 +128,7 @@ export interface ClientRouterProps {
     /** Instance of the hash router */
     router: HashRouter;
     /** Map of route paths to React components */
-    routes: Map<string, RouteComponent>;
+    routes: Record<string, RouteComponent>;
     homeUrl: string;
     /** Component to render when route is not found */
     notFoundComponent: RouteComponent;

@@ -2,6 +2,7 @@ import React, { memo, useEffect, useState } from 'react';
 import { useSignals } from '@preact/signals-react/runtime';
 
 import { ClientRouterProps } from '../types';
+import { getRouteItem } from '../helpers';
 
 /**
  * ClientRouter component for React applications
@@ -22,7 +23,7 @@ export const ClientRouter = memo<ClientRouterProps>(({
         const unsubscribe = router.create({
             config: {
                 homeUrl,
-                routeNames: [...routes.keys()],
+                routeNames: Object.keys(routes),
             },
             onChange: (entry) => {
                 setHash(entry.hash);
@@ -35,7 +36,7 @@ export const ClientRouter = memo<ClientRouterProps>(({
             router.destroy();
         };
     }, [NotFound, homeUrl, router, routes]);
-    const Component = (hash ? routes.get(hash) : null) ?? NotFound;
+    const Component = (hash ? getRouteItem(routes, hash) : null) ?? NotFound;
 
     return (
         <div 

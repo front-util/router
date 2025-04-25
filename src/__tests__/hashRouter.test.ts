@@ -233,6 +233,19 @@ describe('hashRouter', () => {
             expect(router.hasPage('about')).toBe(true);
             expect(router.hasPage('contact')).toBe(true);
         });
+
+        it('should return true for route with params', () => {
+            router.create({
+                onChange,
+                config: {
+                    homeUrl   : 'home',
+                    routeNames: ['home', 'profile/:id' ],
+                },
+            });
+      
+            expect(router.hasPage('home')).toBe(true);
+            expect(router.hasPage('profile/1000')).toBe(true);
+        });
     
         it('should return false for invalid routes', () => {
             router.create({
