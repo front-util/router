@@ -109,7 +109,7 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
         const currentHash = hashNavigation.currentEntry.value.hash;
         
         // If current hash is empty, navigate to home URL
-        if(currentHash && !checkExistPage(currentHash) && routerConfig.homeUrl) {
+        if(currentHash && !checkExistPage(currentHash) && routerConfig.homeUrl) {            
             // Replace the current history entry with the home URL
             replaceState({ hash: routerConfig.homeUrl, });
         }

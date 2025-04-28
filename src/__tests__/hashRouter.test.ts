@@ -177,6 +177,53 @@ describe('hashRouter', () => {
       
             expect(router.getHash()).toEqual('home');
         });
+
+        it('should set correct home URL if current hash has addition hash', () => {
+            window.location.hash = '#/#home';
+            const localRouter = createHashRouter(createHashNavigation());
+            
+            localRouter.create({
+                onChange,
+                config: {
+                    homeUrl   : 'home',
+                    routeNames: ['home', 'about', 'contact'],
+                },
+            });
+      
+            expect(localRouter.getHash()).toEqual('home');
+            expect(localRouter.entries.value.length).toEqual(1);
+        });
+
+        it('should set correct home URL if current hash has hash', () => {
+            window.location.hash = '#/about';
+            const localRouter = createHashRouter(createHashNavigation());
+
+            localRouter.create({
+                onChange,
+                config: {
+                    homeUrl   : 'home',
+                    routeNames: ['home', 'about', 'contact'],
+                },
+            });
+      
+            expect(localRouter.getHash()).toEqual('about');
+            expect(localRouter.entries.value.length).toEqual(1);
+        });
+
+        it('should set correct home URL if current hash has hash after destroy', () => {
+            window.location.hash = '#/about';
+
+            router.create({
+                onChange,
+                config: {
+                    homeUrl   : 'home',
+                    routeNames: ['home', 'about', 'contact'],
+                },
+            });
+      
+            expect(router.getHash()).toEqual('about');
+            expect(router.entries.value.length).toEqual(1);
+        });
     
         it('should not call onChange for the same URL twice', () => {
             router.create({
@@ -193,6 +240,54 @@ describe('hashRouter', () => {
             router.navigate('home');
       
             expect(onChange).toHaveBeenCalledTimes(1);
+        });
+
+        it('should set home correct hash if router with params', () => {      
+            window.location.hash = '#/profile/100';
+            const localRouter = createHashRouter(createHashNavigation());
+
+            localRouter.create({
+                onChange,
+                config: {
+                    homeUrl   : 'dashboard',
+                    routeNames: ['dashboard', 'profile/:id'],
+                },
+            });
+      
+            expect(localRouter.getHash()).toEqual('profile/100');
+            expect(localRouter.entries.value.length).toEqual(1);
+            expect(localRouter.currentEntry.value.hash).toEqual('profile/100');
+            expect(localRouter.currentEntry.value.getParams()).toEqual({id: '100',});
+            expect(onChange).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('destroy', () => {
+        it('should correct clear router data after destroy', () => {
+            router.create({
+                onChange,
+                config: {
+                    homeUrl   : 'dashboard',
+                    routeNames: ['dashboard', 'profile', 'test', 'home/:id'],
+                },
+            });
+            router.navigate('test');
+            router.navigate('profile');
+            router.navigate('dashboard');
+            router.navigate('home/100');
+    
+            router.destroy();
+            onChange.mockReset();
+    
+            expect(router.currentEntry.value.hash).toEqual('home/100');
+            expect(router.currentEntry.value.getParams()).toEqual({id: '100',});
+            expect(router.currentEntry.value.url).toEqual('http://localhost:3000/#/home/100');
+            expect(router.currentEntry.value.pattern).toEqual('home/:id');
+            expect(router.entries.value.length).toEqual(1);
+
+            router.navigate('test');
+
+            expect(onChange).toHaveBeenCalledTimes(0);
         });
     });
   

@@ -11,7 +11,7 @@ const generateRandomId = () => Math.random().toString(36).substring(2, 9);
 export const getHash = (url: string): string => {
     const urlObject = new URL(url);
 
-    return urlObject.hash.slice(1).replace('/', '') || '/';
+    return urlObject.hash.replace(/^#\/?#?/, '') || '/';
 };
 
 export const createHash = (hash: string) => `/${hash}`;
@@ -20,7 +20,7 @@ export const createHistoryEntry = (
     url: string, 
     state: NavigationState = {}, 
     index: number = 0
-): NavigationHistoryEntry => {
+): NavigationHistoryEntry => {    
     return {
         url,
         key         : generateRandomId(),

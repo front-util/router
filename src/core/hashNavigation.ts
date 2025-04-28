@@ -14,19 +14,29 @@ import {
     createHash 
 } from '../helpers';
 
+const createInitialState = () => ({
+    url          : window.location.href,
+    entries      : [createHistoryEntry(window.location.href)],
+    index        : 0,
+    navigations  : new Map<string, NavigationResult>(),
+    subscriptions: new Set<VoidFunction>(),
+});
+
 /**
  * Implementation of hash-based router core using Preact signals
  * and following the Navigation API interface, while using window.history for compatibility
  */
 export const createHashNavigation = (): HashNavigation => {
+    const initialState = createInitialState();
+
     // Internal signals to manage router state
-    const _currentURL = signal<string>(window.location.href);
-    const _entries = signal<NavigationHistoryEntry[]>([createHistoryEntry(window.location.href)]);
-    const _currentIndex = signal<number>(0);
-    const _navigations = signal<Map<string, NavigationResult>>(new Map());
+    const _currentURL = signal<string>(initialState.url);
+    const _entries = signal<NavigationHistoryEntry[]>(initialState.entries);
+    const _currentIndex = signal<number>(initialState.index);
+    const _navigations = signal<Map<string, NavigationResult>>(initialState.navigations);
     
     // Storage for active subscriptions
-    const _subscriptions = new Set<VoidFunction>();
+    const _subscriptions = initialState.subscriptions;
     
     // Public computed signals that reflect the router state
     const currentEntry = computed(() => _entries.value[_currentIndex.value]);
@@ -40,10 +50,9 @@ export const createHashNavigation = (): HashNavigation => {
     // Initialize the router state from the current location
     const initializeFromLocation = (): void => {
         // Try to get existing state from the history API        
-        const state = window.history.state ?? currentEntry.value.state;
-        
-        const initialEntry = createHistoryEntry(_currentURL.value, state);
-        
+        const state = window.history.state;
+        const initialEntry = createHistoryEntry(window.location.href, state);
+            
         // Using batch to update multiple signals at once
         batch(() => {
             _currentURL.value = initialEntry.url as string;
@@ -402,6 +411,13 @@ export const createHashNavigation = (): HashNavigation => {
         // Cancel all active subscriptions
         _subscriptions.forEach((unsub) => unsub());
         _subscriptions.clear();
+
+        const newInitialState = createInitialState();
+
+        _currentURL.value = newInitialState.url;
+        _entries.value = newInitialState.entries;
+        _currentIndex.value = newInitialState.index;
+        _navigations.value = newInitialState.navigations;        
         
         // Cancel internal synchronization effect
         unsubscribe();

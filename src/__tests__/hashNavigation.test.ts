@@ -72,6 +72,7 @@ describe('createHashNavigation', () => {
         expect(nav.currentEntry.value.hash).toBe('test2');
         expect(nav.currentEntry.value.state).toEqual(['test']);
 
+        window.location.href = 'http://localhost:5000/test#/test2';
         nav.create();
 
         expect(nav.entries.value.length).toEqual(1);
