@@ -439,16 +439,17 @@ describe('hashRouter', () => {
             expect(navigateSpy).not.toHaveBeenCalled();
         });
     
-        it('should navigate when hash is provided', () => {
+        it('should not navigate when hash is provided', () => {
             const navigateSpy = vi.spyOn(router._navigation, 'navigate');
       
             router.replaceState({ hash: 'about', });
       
-            expect(navigateSpy).toHaveBeenCalledWith('about', expect.anything());
+            expect(navigateSpy).not.toHaveBeenCalled();
         });
     
-        it('should update state and navigate when both are provided', () => {
+        it('should update state and not navigate when both are provided', () => {
             const updateSpy = vi.spyOn(router._navigation, 'updateCurrentEntry');
+            const updateEntrySpy = vi.spyOn(router._navigation, 'updateCurrentEntryHash');
             const navigateSpy = vi.spyOn(router._navigation, 'navigate');
       
             router.replaceState({ 
@@ -456,8 +457,9 @@ describe('hashRouter', () => {
                 hash : 'contact',
             });
       
-            expect(updateSpy).toHaveBeenCalledWith({ test: 'value', });
-            expect(navigateSpy).toHaveBeenCalledWith('contact', expect.anything());
+            expect(updateEntrySpy).toHaveBeenCalledWith('contact', { test: 'value', });
+            expect(navigateSpy).not.toHaveBeenCalled();
+            expect(updateSpy).not.toHaveBeenCalled();
         });
     
         it('should do nothing when no config is provided', () => {

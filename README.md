@@ -99,7 +99,7 @@ HashNavigation provides direct access to browser history and navigation function
 - `back(options)` - Navigate backward in history
 - `forward(options)` - Navigate forward in history
 - `updateCurrentEntry(options, hash)` - Update the state of the current entry, optionally updating the hash
-- `updateCurrentEntryHash(hash)` - Update only the hash of the current entry
+- `updateCurrentEntryHash(hash, newState?: NavigationState | null | undefined)` - Update hash and state of the current entry
 - `create()` - Initialize the navigation system
 - `subscribe(callback)` - Subscribe to navigation changes with callback receiving current entry, previous entry, and hash
 - `destroy()` - Clean up all listeners and resources
@@ -857,7 +857,7 @@ export interface HashNavigation {
   traverseTo: (key: string, options?: NavigationOptions) => NavigationResult | null;
   back: (options?: NavigationOptions) => NavigationResult | null;
   forward: (options?: NavigationOptions) => NavigationResult | null;
-  updateCurrentEntry: (options?: NavigationOptions, hash?: string) => void;
+  updateCurrentEntry: (options?: NavigationOptions) => void;
   
   // Subscription method
   subscribe: (
@@ -873,7 +873,7 @@ export interface HashNavigation {
   // Cleanup
   destroy: () => void;
 
-  updateCurrentEntryHash: (hash: string) => void;
+  updateCurrentEntryHash: (hash: string, newState?: NavigationState | null | undefined) => void;
 }
 ```
 

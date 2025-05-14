@@ -69,7 +69,7 @@ export interface HashNavigation {
   // Cleanup
   destroy: () => void;
 
-  updateCurrentEntryHash: (hash: string) => void;
+  updateCurrentEntryHash: (hash: string, newState?: NavigationState | null | undefined) => void;
 }
 
 /**

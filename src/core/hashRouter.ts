@@ -1,6 +1,6 @@
 import { computed } from '@preact/signals';
 
-import { createHash, getParamsFromUrl, getRouteItem, getRouteMap, parseQueryParams } from '../helpers';
+import { getParamsFromUrl, getRouteItem, getRouteMap, parseQueryParams } from '../helpers';
 
 import { 
     HashNavigation, 
@@ -62,14 +62,13 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
         if(!config) return;    
         const currentEntry = hashNavigation.currentEntry.value;
     
-        if(config.state) {
+        if(config.state && !config.hash) {
             hashNavigation.updateCurrentEntry(config.state);
+            return;
         }
     
         if(config.hash && config.hash !== currentEntry.hash) {
-            hashNavigation.navigate(config.hash, { 
-                state: config.state || currentEntry.state,
-            });
+            hashNavigation.updateCurrentEntryHash(config.hash, config.state || currentEntry.state);
         }
     };
 
@@ -81,17 +80,16 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
     const create = (config: SubscribeChangeConfig): VoidFunction => {
         const { onChange, config: initConfig, } = config;
 
-        // Set initial home as initial hash if it empty
-        if(!window.location.hash && initConfig.homeUrl) {            
-            window.location.hash = `#${createHash(initConfig.homeUrl)}`;
-            hashNavigation.updateCurrentEntryHash(initConfig.homeUrl);
-        }
-  
         // Store the configuration for future use
         routerConfig = initConfig;
   
         let prevLocation: NavigationHistoryEntry | null = null;
 
+        // Set initial home as initial hash if it empty
+        if(!window.location.hash) {            
+            hashNavigation.updateCurrentEntryHash(initConfig.homeUrl);
+        }
+  
         hashNavigation.create();
   
         // Subscribe to navigation events
@@ -109,9 +107,8 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
         const currentHash = hashNavigation.currentEntry.value.hash;
         
         // If current hash is empty, navigate to home URL
-        if(currentHash && !checkExistPage(currentHash) && routerConfig.homeUrl) {            
-            // Replace the current history entry with the home URL
-            replaceState({ hash: routerConfig.homeUrl, });
+        if(currentHash && !checkExistPage(currentHash)) {            
+            hashNavigation.updateCurrentEntryHash(initConfig.homeUrl);
         }
   
         return unsubscribe;
