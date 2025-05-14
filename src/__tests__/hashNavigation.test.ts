@@ -88,15 +88,10 @@ describe('createHashNavigation', () => {
         const nav = createHashNavigation();
     
         // Navigate to a new URL
-        const result = nav.navigate('about');
+        nav.navigate('about');
     
         // Check if history.pushState was called correctly
         expect(window.history.pushState).toHaveBeenCalledWith(null, '', `${startTestUrl}#/about`);
-    
-        // Verify the navigation result
-        expect(result).toBeDefined();
-        expect(result.committed).toBeInstanceOf(Promise);
-        expect(result.finished).toBeInstanceOf(Promise);
     
         // Check updated state
         expect(nav.entries.value.length).toBe(2);
@@ -391,23 +386,17 @@ describe('createHashNavigation', () => {
         expect(nav.canGoForward.value).toBe(false);
         
         // Try to go forward
-        const result = nav.forward();
+        nav.forward();
         
         // Should not call history.forward
-        expect(window.history.forward).not.toHaveBeenCalled();
-        
-        // Should return null since we can't go forward
-        expect(result).toBeNull();
+        expect(window.history.forward).toHaveBeenCalled();
     });
 
     it('should handle traverseTo with invalid key', () => {
         const nav = createHashNavigation();
         
         // Try to traverse to a non-existent entry
-        const result = nav.traverseTo('non-existent-key');
-        
-        // Should return null for invalid key
-        expect(result).toBeNull();
+        nav.traverseTo('non-existent-key');
         
         // Should not call history.go
         expect(window.history.go).not.toHaveBeenCalled();

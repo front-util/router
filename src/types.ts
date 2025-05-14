@@ -23,14 +23,6 @@ export interface NavigationHistoryEntry {
   }
   
 /**
-   * Interface for NavigationResult based on the Navigation API
-   */
-export interface NavigationResult {
-    committed: Promise<NavigationHistoryEntry>;
-    finished: Promise<NavigationHistoryEntry>;
-  }
-  
-/**
    * Simplified NavigateEvent interface based on the Navigation API
    */
 export interface NavigateEvent extends Event {
@@ -57,10 +49,10 @@ export interface HashNavigation {
   canGoForward: ReadonlySignal<boolean>;
   
   // Navigation methods
-  navigate: (hash: string, options?: NavigationOptions) => NavigationResult;
-  traverseTo: (key: string, options?: NavigationOptions) => NavigationResult | null;
-  back: (options?: NavigationOptions) => NavigationResult | null;
-  forward: (options?: NavigationOptions) => NavigationResult | null;
+  navigate: (hash: string, options?: NavigationOptions) => void;
+  traverseTo: (key: string, options?: NavigationOptions) => void;
+  back: (options?: NavigationOptions) => void;
+  forward: (options?: NavigationOptions) => void;
   updateCurrentEntry: (options?: NavigationOptions, hash?: string) => void;
   
   // Subscription method
@@ -109,7 +101,7 @@ export interface HashRouter extends Pick<HashNavigation, 'entries' | 'canGoBack'
   hash: ReadonlySignal<string>;
   create: (config: SubscribeChangeConfig) => VoidFunction;
   subscribe: (callback: NavigationCb) => VoidFunction;
-  navigate: (hash: string, state?: Record<string, unknown>) => NavigationResult;
+  navigate: (hash: string, state?: Record<string, unknown>) => void;
   replaceState : (config?: {state?: Record<string, unknown>; hash?: string;}) => void;
   goBack: VoidFunction;
   goToPrev: VoidFunction;

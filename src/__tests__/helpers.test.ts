@@ -1,16 +1,13 @@
-/* eslint-disable promise/always-return */
-/* eslint-disable promise/catch-or-return */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 import { 
     getHash, 
     createHistoryEntry, 
-    createNavigationResult, 
     isRouteMatch, 
     getRouteItem, 
     getParamsFromUrl 
 } from '../helpers';
-import type { NavigationHistoryEntry, NavigationState } from '../types';
+import type { NavigationState } from '../types';
 
 describe('helpers/getHash', () => {
     it('should extract hash from URL', () => {
@@ -92,98 +89,6 @@ describe('helpers/createHistoryEntry', () => {
         const entry = createHistoryEntry('https://example.com', state);
     
         expect(entry.state).toBe(state);
-    });
-});
-
-describe('helpers/createNavigationResult', () => {
-    beforeEach(() => {
-        vi.useFakeTimers();
-    });
-
-    afterEach(() => {
-        vi.useRealTimers();
-    });
-
-    it('should create a navigation result with committed and finished promises', () => {
-        const entry: NavigationHistoryEntry = createHistoryEntry('https://example.com');
-        const result = createNavigationResult(entry);
-
-        expect(result).toEqual({
-            committed: expect.any(Promise),
-            finished : expect.any(Promise),
-        });
-    });
-
-    it('should resolve committed promise immediately (on next tick)', async () => {
-        const entry = createHistoryEntry('https://example.com');
-        const result = createNavigationResult(entry);
-
-        let committedResolved = false;
-
-        result.committed.then(() => {
-            committedResolved = true;
-        });
-
-        // Promise should not be resolved yet
-        expect(committedResolved).toBe(false);
-
-        // Advance timers to simulate next tick
-        await vi.advanceTimersByTimeAsync(0);
-
-        // Now the promise should be resolved
-        expect(committedResolved).toBe(true);
-    });
-
-    it('should resolve finished promise after committed', async () => {
-        const entry = createHistoryEntry('https://example.com');
-        const result = createNavigationResult(entry);
-
-        let committedResolved = false;
-        let finishedResolved = false;
-
-        result.committed.then(() => {
-            committedResolved = true;
-        });
-
-        result.finished.then(() => {
-            finishedResolved = true;
-        });
-
-        // Advance timers just for the committed promise
-        await vi.advanceTimersByTimeAsync(0);
-
-        // Committed should be resolved, but not finished
-        expect(committedResolved).toBe(true);
-        expect(finishedResolved).toBe(false);
-
-        // Advance timers for the finished promise
-        await vi.advanceTimersByTimeAsync(10);
-
-        // Now both should be resolved
-        expect(committedResolved).toBe(true);
-        expect(finishedResolved).toBe(true);
-    });
-
-    it('should handle chaining promises correctly', async () => {
-        const entry = createHistoryEntry('https://example.com');
-        const result = createNavigationResult(entry);
-
-        let transformedCommitted: string | null = null;
-        let transformedFinished: string | null = null;
-         
-        result.committed
-            .then((e) => `Committed: ${e.url}`)
-            .then((value) => { transformedCommitted = value; });
-
-        result.finished
-            .then((e) => `Finished: ${e.url}`)
-            .then((value) => { transformedFinished = value; });
-
-        // Advance timers to resolve both promises
-        await vi.advanceTimersByTimeAsync(10);
-
-        expect(transformedCommitted).toBe('Committed: https://example.com');
-        expect(transformedFinished).toBe('Finished: https://example.com');
     });
 });
 

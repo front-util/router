@@ -1,7 +1,6 @@
 import { signal, computed, effect, batch } from '@preact/signals';
 
 import type { 
-    NavigationResult, 
     NavigationState, 
     NavigationHistoryEntry, 
     NavigationOptions, 
@@ -9,7 +8,6 @@ import type {
 } from '../types';
 import { 
     createHistoryEntry, 
-    createNavigationResult, 
     getHash, 
     createHash 
 } from '../helpers';
@@ -106,22 +104,16 @@ export const createHashNavigation = (): HashNavigation => {
 
     // Helper function to update navigation state
     const updateNavigationState = (
-        destination: NavigationHistoryEntry,
         newCurrentIndex: number,
         newUrl?: string
-    ): NavigationResult => {
-        // Create a navigation result
-        const result = createNavigationResult(destination);
-        
+    ) => {        
         // Using batch to update multiple signals at once
         batch(() => {
             if(newUrl) {
                 _currentURL.value = newUrl;
             }
             _currentIndex.value = newCurrentIndex;
-        });
-        
-        return result;
+        });        
     };
 
     // Handle entry state updates
@@ -222,7 +214,7 @@ export const createHashNavigation = (): HashNavigation => {
     };
     
     // Public API methods
-    const navigate = (hash: string, options: NavigationOptions = {}): NavigationResult => {
+    const navigate = (hash: string, options: NavigationOptions = {}) => {
         // Create full URL by resolving against current location
         const originalHash = currentEntry.value.hash;
         const fullUrl = new URL(`#${createHash(hash)}`, window.location.href).href;
@@ -250,10 +242,8 @@ export const createHashNavigation = (): HashNavigation => {
                 _entries.value = newEntries;
                 _currentIndex.value = newEntries.length - 1;
                 _currentURL.value = fullUrl;
-            });
-            
-            // Update navigation state
-            return updateNavigationState(destination, newEntries.length - 1);
+                updateNavigationState(newEntries.length - 1);
+            });            
         } else {
             // If hash didn't change, check if state changed
             const currentEntryValue = currentEntry.value;
@@ -261,23 +251,16 @@ export const createHashNavigation = (): HashNavigation => {
             if(options.state && JSON.stringify(currentEntryValue.state) !== JSON.stringify(options.state)) {
                 // Update state without changing URL
                 window.history.replaceState(options.state, '', fullUrl);
-                
-                const updatedEntry = updateEntryState(_currentIndex.value, options.state as NavigationState);
-                
-                // Create and return a navigation result for the updated entry
-                return createNavigationResult(updatedEntry);
+                updateEntryState(_currentIndex.value, options.state as NavigationState);
             }
-            
-            // If nothing changed, return a result that resolves immediately with current entry
-            return createNavigationResult(currentEntryValue);
         }
     };
 
-    const traverseTo = (key: string, options: NavigationOptions = {}): NavigationResult | null => {
+    const traverseTo = (key: string, options: NavigationOptions = {}) => {
         const entryIndex = _entries.value.findIndex((entry) => entry.key === key);
         
         if(entryIndex === -1) {
-            return null;
+            return;
         }
         
         const destination = _entries.value[entryIndex];
@@ -296,10 +279,10 @@ export const createHashNavigation = (): HashNavigation => {
         window.history.go(delta);
         
         // Update navigation state
-        return updateNavigationState(updatedDestination, entryIndex, updatedDestination.url);
+        updateNavigationState(entryIndex, updatedDestination.url);
     };
 
-    const back = (options: NavigationOptions = {}): NavigationResult | null => {
+    const back = (options: NavigationOptions = {}) => {
         if(!canGoBack.value) {
             window.history.back();
             return null;
@@ -319,11 +302,12 @@ export const createHashNavigation = (): HashNavigation => {
         window.history.back();
         
         // Update navigation state
-        return updateNavigationState(destination, prevIndex, destination.url);
+        updateNavigationState(prevIndex, destination.url);
     };
 
-    const forward = (options: NavigationOptions = {}): NavigationResult | null => {
+    const forward = (options: NavigationOptions = {}) => {
         if(!canGoForward.value) {
+            window.history.forward();
             return null;
         }
         
@@ -341,7 +325,7 @@ export const createHashNavigation = (): HashNavigation => {
         window.history.forward();
         
         // Update navigation state
-        return updateNavigationState(destination, nextIndex, destination.url);
+        updateNavigationState(nextIndex, destination.url);
     };
 
     const updateCurrentEntry = (options: NavigationOptions = {}): void => {

@@ -1,5 +1,4 @@
 import type { 
-    NavigationResult, 
     NavigationState, 
     NavigationHistoryEntry, 
     QueryParams
@@ -30,25 +29,6 @@ export const createHistoryEntry = (
         state,
         hash        : getHash(url),
     };
-};
-
-export const createNavigationResult = (destination: NavigationHistoryEntry): NavigationResult => {
-    let commitResolve: (value: NavigationHistoryEntry) => void;
-    let finishResolve: (value: NavigationHistoryEntry) => void;
-    
-    const committed = new Promise<NavigationHistoryEntry>((resolve) => {
-        commitResolve = resolve;
-    });
-    
-    const finished = new Promise<NavigationHistoryEntry>((resolve) => {
-        finishResolve = resolve;
-    });
-    
-    // Use setTimeout to simulate the async nature of navigation
-    setTimeout(() => commitResolve(destination), 0);
-    setTimeout(() => finishResolve(destination), 10);
-    
-    return { committed, finished, };
 };
 
 export const isRouteMatch = (pattern: string, hash: string) => {
