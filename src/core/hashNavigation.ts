@@ -18,7 +18,6 @@ const createInitialState = () => ({
     url          : window.location.href,
     entries      : [createHistoryEntry(window.location.href)],
     index        : 0,
-    navigations  : new Map<string, NavigationResult>(),
     subscriptions: new Set<VoidFunction>(),
 });
 
@@ -33,7 +32,6 @@ export const createHashNavigation = (): HashNavigation => {
     const _currentURL = signal<string>(initialState.url);
     const _entries = signal<NavigationHistoryEntry[]>(initialState.entries);
     const _currentIndex = signal<number>(initialState.index);
-    const _navigations = signal<Map<string, NavigationResult>>(initialState.navigations);
     
     // Storage for active subscriptions
     const _subscriptions = initialState.subscriptions;
@@ -115,18 +113,12 @@ export const createHashNavigation = (): HashNavigation => {
         // Create a navigation result
         const result = createNavigationResult(destination);
         
-        // Store the navigation for potential future reference
-        const navigations = new Map(_navigations.value);
-
-        navigations.set(destination.key, result);
-        
         // Using batch to update multiple signals at once
         batch(() => {
             if(newUrl) {
                 _currentURL.value = newUrl;
             }
             _currentIndex.value = newCurrentIndex;
-            _navigations.value = navigations;
         });
         
         return result;
@@ -369,15 +361,7 @@ export const createHashNavigation = (): HashNavigation => {
         window.location.hash = getHash(currentEntryValue.url);
         
         // Update navigation state
-        const result = createNavigationResult(destination);
-        
-        // Store the navigation for potential future reference
-        const navigations = new Map(_navigations.value);
-
-        navigations.set(destination.key, result);
-        _navigations.value = navigations;
-        
-        return result;
+        return createNavigationResult(destination);
     };
 
     const updateCurrentEntry = (options: NavigationOptions = {}): void => {
@@ -414,10 +398,11 @@ export const createHashNavigation = (): HashNavigation => {
 
         const newInitialState = createInitialState();
 
-        _currentURL.value = newInitialState.url;
-        _entries.value = newInitialState.entries;
-        _currentIndex.value = newInitialState.index;
-        _navigations.value = newInitialState.navigations;        
+        batch(() => {
+            _currentURL.value = newInitialState.url;
+            _entries.value = newInitialState.entries;
+            _currentIndex.value = newInitialState.index;
+        });     
         
         // Cancel internal synchronization effect
         unsubscribe();
