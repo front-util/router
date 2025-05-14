@@ -224,26 +224,6 @@ describe('createHashNavigation', () => {
         expect(nav.currentEntry.value.state).toEqual({ updated: true, });
     });
 
-    it('should reload the current entry correctly', () => {
-        const nav = createHashNavigation();
-    
-        // Navigate to a page
-        nav.navigate('about', { state: { initial: true, }, });
-    
-        // Reload with new state
-        nav.reload({ state: { reloaded: true, }, });
-    
-        // Verify history.replaceState was called
-        expect(window.history.replaceState).toHaveBeenCalledWith(
-            { reloaded: true, },
-            '',
-            expect.stringContaining('/about')
-        );
-    
-        // Verify entry state was updated
-        expect(nav.currentEntry.value.state).toEqual({ reloaded: true, });
-    });
-
     it('should handle subscribe correctly', () => {
         const nav = createHashNavigation();
     
@@ -505,25 +485,6 @@ describe('createHashNavigation', () => {
         
         // Verify history.go was called with the correct delta (-2)
         expect(window.history.go).toHaveBeenCalledWith(-2);
-    });
-
-    it('should handle reload without state change', () => {
-        const nav = createHashNavigation();
-        
-        // Navigate to a page with state
-        nav.navigate('test-page', { state: { original: true, }, });
-        
-        // Reset mocks
-        vi.clearAllMocks();
-        
-        // Reload without specifying state
-        nav.reload();
-        
-        // Should not call replaceState
-        expect(window.history.replaceState).not.toHaveBeenCalled();
-        
-        // Should keep the original state
-        expect(nav.currentEntry.value.state).toEqual({ original: true, });
     });
 
     it('should create a navigation instance and set up event listeners', () => {

@@ -98,7 +98,6 @@ HashNavigation provides direct access to browser history and navigation function
 - `traverseTo(key, options)` - Navigate to a specific history entry by key
 - `back(options)` - Navigate backward in history
 - `forward(options)` - Navigate forward in history
-- `reload(options)` - Reload the current entry
 - `updateCurrentEntry(options, hash)` - Update the state of the current entry, optionally updating the hash
 - `updateCurrentEntryHash(hash)` - Update only the hash of the current entry
 - `create()` - Initialize the navigation system
@@ -858,7 +857,6 @@ export interface HashNavigation {
   traverseTo: (key: string, options?: NavigationOptions) => NavigationResult | null;
   back: (options?: NavigationOptions) => NavigationResult | null;
   forward: (options?: NavigationOptions) => NavigationResult | null;
-  reload: (options?: NavigationOptions) => NavigationResult;
   updateCurrentEntry: (options?: NavigationOptions, hash?: string) => void;
   
   // Subscription method

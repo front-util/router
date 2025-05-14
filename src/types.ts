@@ -61,7 +61,6 @@ export interface HashNavigation {
   traverseTo: (key: string, options?: NavigationOptions) => NavigationResult | null;
   back: (options?: NavigationOptions) => NavigationResult | null;
   forward: (options?: NavigationOptions) => NavigationResult | null;
-  reload: (options?: NavigationOptions) => NavigationResult;
   updateCurrentEntry: (options?: NavigationOptions, hash?: string) => void;
   
   // Subscription method

@@ -344,26 +344,6 @@ export const createHashNavigation = (): HashNavigation => {
         return updateNavigationState(destination, nextIndex, destination.url);
     };
 
-    const reload = (options: NavigationOptions = {}): NavigationResult => {
-        const currentEntryValue = currentEntry.value;
-        
-        // Create a new destination to represent the reload, potentially with updated state
-        const state = options.state !== undefined ? options.state : currentEntryValue.state;
-        const destination = createHistoryEntry(currentEntryValue.url, state, currentEntryValue.index);
-        
-        // Update history state if new state is provided
-        if(options.state !== undefined) {
-            window.history.replaceState(options.state, '', currentEntryValue.url);
-            updateEntryState(_currentIndex.value, options.state as NavigationState);
-        }
-        
-        // Actually reload the current hash route
-        window.location.hash = getHash(currentEntryValue.url);
-        
-        // Update navigation state
-        return createNavigationResult(destination);
-    };
-
     const updateCurrentEntry = (options: NavigationOptions = {}): void => {
         const currentIndex = _currentIndex.value;
         
@@ -422,7 +402,6 @@ export const createHashNavigation = (): HashNavigation => {
         traverseTo,
         back,
         forward,
-        reload,
         updateCurrentEntry,
         
         // Subscription method
