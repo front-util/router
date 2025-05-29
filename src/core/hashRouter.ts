@@ -139,11 +139,13 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
         hashNavigation.back();
     };
 
-    /**
-     * Alias for goBack
-     */
     const goToPrev = (): void => {
-        hashNavigation.back();
+        const prevEntry = hashNavigation.prevEntry.value;
+
+        if(!prevEntry) {
+            return goBack();
+        }
+        return replaceState({hash: prevEntry.hash, state: prevEntry.state,});
     };
 
     /**
