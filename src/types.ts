@@ -51,7 +51,8 @@ export interface HashNavigation {
   // Navigation methods
   navigate: (hash: string, options?: NavigationOptions) => void;
   traverseTo: (key: string, options?: NavigationOptions) => void;
-  back: (options?: NavigationOptions) => void;
+  back: () => void;
+  goToPrev: () => void;
   forward: (options?: NavigationOptions) => void;
   updateCurrentEntry: (options?: NavigationOptions, hash?: string) => void;
   

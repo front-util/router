@@ -286,25 +286,26 @@ export const createHashNavigation = (): HashNavigation => {
         updateNavigationState(entryIndex, updatedDestination.url);
     };
 
-    const back = (options: NavigationOptions = {}) => {
-        if(!canGoBack.value) {
+    const back = () => {
+        if(!prevEntry.value) {
             window.history.back();
             return null;
         }
-        
-        const prevIndex = _currentIndex.value - 1;
-        let destination = _entries.value[prevIndex];
-        
-        // Handle potential state update if options include state
-        if(options.state) {
-            destination = replaceHistoryEntry(destination.url, options.state as NavigationState, prevIndex);
-        }
-        
-        // Use history.back to navigate back
         window.history.back();
         
         // Update navigation state
-        updateNavigationState(prevIndex, destination.url);
+        updateNavigationState(prevEntry.value.index, prevEntry.value.url);
+    };
+
+    const goToPrev = () => {
+        if(!prevEntry.value) {
+            window.history.back();
+            return null;
+        }
+        window.history.replaceState(prevEntry.value.state, '', prevEntry.value.url);
+        
+        // Update navigation state
+        updateNavigationState(prevEntry.value.index, prevEntry.value.url);
     };
 
     const forward = (options: NavigationOptions = {}) => {
@@ -378,6 +379,7 @@ export const createHashNavigation = (): HashNavigation => {
         back,
         forward,
         updateCurrentEntry,
+        goToPrev,
         
         // Subscription method
         subscribe,

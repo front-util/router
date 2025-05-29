@@ -152,6 +152,30 @@ describe('createHashNavigation', () => {
         expect(nav.canGoForward.value).toBe(true);
     });
 
+    it('should handle prev navigation correctly', () => {
+        const nav = createHashNavigation();
+    
+        // First navigate to create history
+        nav.navigate('about');
+        nav.navigate('home');
+        nav.navigate('contact');
+    
+        expect(nav.currentEntry.value.url).toContain('/contact');
+        expect(nav.canGoBack.value).toBe(true);
+        expect(nav.canGoForward.value).toBe(false);
+        expect(nav.prevEntry.value?.hash).toBe('home');
+
+        nav.goToPrev();
+
+        expect(window.history.back).toHaveBeenCalledTimes(0);
+        expect(window.history.replaceState).toHaveBeenCalled();
+    
+        expect(nav.currentEntry.value.url).toContain('/home');
+        expect(nav.canGoBack.value).toBe(true);
+        expect(nav.canGoForward.value).toBe(true);
+        expect(nav.prevEntry.value?.hash).toBe('about');
+    });
+
     it('should handle forward navigation correctly', () => {
         const nav = createHashNavigation();
     
@@ -400,27 +424,6 @@ describe('createHashNavigation', () => {
         
         // Should not call history.go
         expect(window.history.go).not.toHaveBeenCalled();
-    });
-
-    it('should handle back navigation with state update', () => {
-        const nav = createHashNavigation();
-        
-        // Create history
-        nav.navigate('page1');
-        nav.navigate('page2');
-        
-        // Go back with new state
-        nav.back({ state: { backState: true, }, });
-        
-        // Verify history.replaceState was called with the new state
-        expect(window.history.replaceState).toHaveBeenCalledWith(
-            { backState: true, },
-            '',
-            expect.stringContaining('page1')
-        );
-        
-        // Verify history.back was called
-        expect(window.history.back).toHaveBeenCalled();
     });
 
     it('should handle forward navigation with state update', () => {

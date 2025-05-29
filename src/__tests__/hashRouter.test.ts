@@ -474,14 +474,18 @@ describe('hashRouter', () => {
     });
   
     describe('goBack and goToPrev', () => {
-        it('should both call navigation.back()', () => {
+        it('should call navigation.back()', () => {
             const backSpy = vi.spyOn(router._navigation, 'back');
       
             router.goBack();
             expect(backSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('should call navigation.goToPrev()', () => {
+            const backSpy = vi.spyOn(router._navigation, 'goToPrev');
       
             router.goToPrev();
-            expect(backSpy).toHaveBeenCalledTimes(2);
+            expect(backSpy).toHaveBeenCalledTimes(1);
         });
     });
 
