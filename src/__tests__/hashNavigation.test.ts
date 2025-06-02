@@ -168,12 +168,10 @@ describe('createHashNavigation', () => {
         nav.goToPrev();
 
         expect(window.history.back).toHaveBeenCalledTimes(0);
-        expect(window.history.replaceState).toHaveBeenCalled();
+        expect(window.history.pushState).toHaveBeenCalled();
     
         expect(nav.currentEntry.value.url).toContain('/home');
         expect(nav.canGoBack.value).toBe(true);
-        expect(nav.canGoForward.value).toBe(true);
-        expect(nav.prevEntry.value?.hash).toBe('about');
     });
 
     it('should handle forward navigation correctly', () => {
@@ -424,31 +422,6 @@ describe('createHashNavigation', () => {
         
         // Should not call history.go
         expect(window.history.go).not.toHaveBeenCalled();
-    });
-
-    it('should handle forward navigation with state update', () => {
-        const nav = createHashNavigation();
-        
-        // Create history and go back
-        nav.navigate('page1');
-        nav.navigate('page2');
-        nav.back();
-        
-        // Reset mocks
-        vi.clearAllMocks();
-        
-        // Go forward with new state
-        nav.forward({ state: { forwardState: true, }, });
-        
-        // Verify history.replaceState was called with the new state
-        expect(window.history.replaceState).toHaveBeenCalledWith(
-            { forwardState: true, },
-            '',
-            expect.stringContaining('page2')
-        );
-        
-        // Verify history.forward was called
-        expect(window.history.forward).toHaveBeenCalled();
     });
 
     it('should handle traverseTo with state update', () => {

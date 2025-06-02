@@ -38,6 +38,20 @@ export const ClientRouter = memo<ClientRouterProps>(({
     }, [NotFound, homeUrl, router, routes]);
     const Component = (hash ? getRouteItem(routes, hash) : null) ?? NotFound;
 
+    useEffect(() => {
+        const controller = new AbortController();
+
+        window.addEventListener('popstate', (evt) => {
+            evt.stopPropagation();
+        }, {
+            signal: controller.signal,
+        });
+
+        return () => {
+            controller.abort();
+        };
+    }, []);
+
     return (
         <div 
             className={className}

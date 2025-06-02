@@ -62,6 +62,10 @@ export const createHashNavigation = (): HashNavigation => {
         // This is triggered by the browser, so we need to update our state
         const newUrl = event.newURL;
         const state = window.history.state;
+
+        if(newUrl === currentEntry.value?.url) {
+            return;
+        }
         
         // Check if this is a navigation we already know about
         const existingEntryIndex = _entries.value.findIndex((entry) => entry.url === newUrl);
@@ -298,30 +302,21 @@ export const createHashNavigation = (): HashNavigation => {
     };
 
     const goToPrev = () => {
-        if(!prevEntry.value) {
+        if(!canGoBack.value || !prevEntry.value) {
             window.history.back();
             return null;
         }
-        window.history.replaceState(prevEntry.value.state, '', prevEntry.value.url);
-        
-        // Update navigation state
-        updateNavigationState(prevEntry.value.index, prevEntry.value.url);
+        navigate(prevEntry.value.hash, prevEntry.value.state);
     };
 
-    const forward = (options: NavigationOptions = {}) => {
+    const forward = () => {
         if(!canGoForward.value) {
             window.history.forward();
             return null;
         }
         
         const nextIndex = _currentIndex.value + 1;
-        let destination = _entries.value[nextIndex];
-        
-        // Handle potential state update if options include state
-        if(options.state) {
-            // Update history state before going forward
-            destination = replaceHistoryEntry(destination.url, options.state as NavigationState, nextIndex);
-        }
+        const destination = _entries.value[nextIndex];
         
         // Use history.forward to navigate forward
         window.history.forward();
