@@ -11,5 +11,13 @@ bun.lockdb
 eslint.config.js
 tsconfig.json
 tsconfig.build.json
+.lintstagedrc.json 
+bun.lockb  
+rspack.config.js 
+vitest.config.ts  
 
-tests/
+__tests__/
+types/__tests__/
+src/__tests__/
+examples/
+coverage/
