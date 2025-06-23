@@ -9,12 +9,12 @@ import ProductPage from '../pages/ProductPage';
 import NotFoundPage from '../pages/NotFoundPage';
 
 // Create a map of routes to components with typed parameters
-const routes = new Map<string, React.FC<any>>([
-    ['home', HomePage],
-    ['about', AboutPage],
-    ['users/:userId', UserProfilePage],
-    ['products/:categoryId/:productId', ProductPage]
-]);
+const routes = {
+    'home': HomePage,
+    'about': AboutPage,
+    'users/:userId': UserProfilePage,
+    'products/:categoryId/:productId': ProductPage
+}
   
 /**
  * Advanced ClientRouter example

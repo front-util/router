@@ -4,16 +4,19 @@ import { ClientRouter } from '../../../src/react/ClientRouter';
 import { hashRouter } from '../../../src/core/hashRouter';
 import HomePage from '../pages/HomePage';
 import AboutPage from '../pages/AboutPage';
+import SettingsPage from '../pages/SettingsPage';
+import ProductPage from '../pages/ProductPage';
 import UserProfilePage from '../pages/UserProfilePage';
 import NotFoundPage from '../pages/NotFoundPage';
 import Navigation from '../components/Navigation';
 
-// Create a map of routes to components
-const routes = new Map<string, React.FC<any>>([
-    ['home', HomePage],
-    ['about', AboutPage],
-    ['users/:userId', UserProfilePage]
-]);
+const routes = {
+    home: HomePage,
+    about: AboutPage,
+    settings: SettingsPage,
+    'users/:userId': UserProfilePage,
+    'products/electronics/:productId': ProductPage,
+}
   
 /**
  * Basic ClientRouter example

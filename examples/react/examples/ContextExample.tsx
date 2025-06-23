@@ -16,12 +16,12 @@ const DashboardPage: React.FC = () => (
     </div>
 );
 
-const routes = new Map<string, React.FC<any>>([
-    ['home', HomePage],
-    ['dashboard', DashboardPage],
-    ['profile/:userId', UserProfilePage],
-    ['settings', SettingsPage]
-]);
+const routes = {
+    'home': HomePage,
+    'dashboard': DashboardPage,
+    'profile/:userId': UserProfilePage,
+    'settings': SettingsPage
+}
 
 // Main application component using context
 const MainApp: React.FC = () => {

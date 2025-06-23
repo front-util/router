@@ -1,5 +1,6 @@
-import React, { memo, useEffect, useState } from 'react';
+import React, { memo, useEffect } from 'react';
 import { useSignals } from '@preact/signals-react/runtime';
+import { useSignal, useComputed } from '@preact/signals-react';
 
 import { ClientRouterProps } from '../types';
 import { getRouteItem } from '../helpers';
@@ -16,7 +17,16 @@ export const ClientRouter = memo<ClientRouterProps>(({
     notFoundComponent: NotFound, 
 }) => {
     useSignals();
-    const [hash, setHash] = useState<string | undefined>(undefined);
+    const hashSignal = useSignal<string | undefined>(undefined);
+
+    const componentSignal = useComputed(() => {
+        if(typeof hashSignal.value === 'undefined') {
+            return null;
+        }
+        
+        return getRouteItem(routes, hashSignal.value) ?? NotFound;
+    });
+    const Component = componentSignal.value;
 
     useEffect(() => {
         // Subscribe to route changes
@@ -26,7 +36,7 @@ export const ClientRouter = memo<ClientRouterProps>(({
                 routeNames: Object.keys(routes),
             },
             onChange: (entry) => {
-                setHash(entry.hash);
+                hashSignal.value = entry.hash;
             },
         });
 
@@ -35,8 +45,7 @@ export const ClientRouter = memo<ClientRouterProps>(({
             unsubscribe();
             router.destroy();
         };
-    }, [NotFound, homeUrl, router, routes]);
-    const Component = (hash ? getRouteItem(routes, hash) : null) ?? NotFound;
+    }, [hashSignal, homeUrl, router, routes]);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -55,9 +64,9 @@ export const ClientRouter = memo<ClientRouterProps>(({
     return (
         <div 
             className={className}
-            key={hash}
+            key={hashSignal.value}
         >
-            <Component {...router.currentEntry.value.getParams()} />
+            {!!Component && <Component {...router.currentEntry.value.getParams()} />}
         </div>
     );
 });

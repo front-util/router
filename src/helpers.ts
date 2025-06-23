@@ -39,7 +39,8 @@ export const isRouteMatch = (pattern: string, hash: string) => {
 
     // Split the pattern and URL into segments to ensure they have the same length
     const patternSegments = pattern.split('/');
-    const hashSegments = hash.split('/');
+    const normilizedHash = hash.split('?')[0];
+    const hashSegments = normilizedHash.split('/');
     
     // If the segments don't match in length, return false
     if(patternSegments.length !== hashSegments.length) {
@@ -53,7 +54,7 @@ export const isRouteMatch = (pattern: string, hash: string) => {
     const regex = new RegExp(`^${patternRegex}$`);
     
     // Check if the hash matches the pattern
-    return regex.test(hash);
+    return regex.test(normilizedHash);
 };
 
 export const getRouteMap = (routeNames: string[]) => {

@@ -124,6 +124,11 @@ describe('helpers/isRouteMatch', () => {
         expect(isRouteMatch('/users/:id', '/users/123/settings')).toBe(false);
         expect(isRouteMatch('/users/:id/settings', '/users/123')).toBe(false);
     });
+
+    it('should handle route with query params', () => {
+        expect(isRouteMatch('/dashboard', '/dashboard?query1=test')).toBe(true);
+        expect(isRouteMatch('/dashboard', '/dashboard#query1=test')).toBe(false);
+    });
 });
 
 describe('helpers/getRouteItem', () => {
