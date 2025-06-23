@@ -232,10 +232,10 @@ export const createHashNavigation = (): HashNavigation => {
         // Only navigate if the hash part actually changed
         if(originalHash !== hash) {            
             // Create a new destination with state from options
-            const destination = createHistoryEntry(fullUrl, options.state as NavigationState, _entries.value.length);
+            const destination = createHistoryEntry(fullUrl, options?.state as NavigationState, _entries.value.length);
             
             // Use history pushState to update the URL without reloading
-            window.history.pushState(options.state || null, '', fullUrl);
+            window.history.pushState(options?.state || null, '', fullUrl);
             
             // Update our internal state
             const newEntries = [..._entries.value];
@@ -258,9 +258,9 @@ export const createHashNavigation = (): HashNavigation => {
             // If hash didn't change, check if state changed
             const currentEntryValue = currentEntry.value;
 
-            if(options.state && JSON.stringify(currentEntryValue.state) !== JSON.stringify(options.state)) {
+            if(options?.state && JSON.stringify(currentEntryValue.state) !== JSON.stringify(options?.state)) {
                 // Update state without changing URL
-                replaceHistoryEntry(fullUrl, options.state as NavigationState);
+                replaceHistoryEntry(fullUrl, options?.state as NavigationState);
             }
         }
     };
@@ -306,7 +306,7 @@ export const createHashNavigation = (): HashNavigation => {
             window.history.back();
             return null;
         }
-        navigate(prevEntry.value.hash, prevEntry.value.state);
+        navigate(prevEntry.value.hash, {state: prevEntry.value.state,});
     };
 
     const forward = () => {
