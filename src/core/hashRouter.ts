@@ -175,9 +175,9 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
         };
     });
 
-    const state = computed(() => currentEntry.value.state);
+    const state = computed(() => hashNavigation.currentEntry.value.state);
 
-    const hash = computed(() => currentEntry.value.hash);
+    const hash = computed(() => hashNavigation.currentEntry.value.hash);
 
     // Return the router object with references to the functions defined in the closure
     return {
