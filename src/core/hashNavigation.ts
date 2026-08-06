@@ -14,7 +14,6 @@ import {
 } from '../helpers';
 
 const createInitialState = () => ({
-    url          : window.location.href,
     entries      : [createHistoryEntry(window.location.href)],
     index        : 0,
     subscriptions: new Set<VoidFunction>(),
@@ -28,12 +27,12 @@ export const createHashNavigation = (): HashNavigation => {
     const initialState = createInitialState();
 
     // Internal signals to manage router state
-    const _currentURL = signal<string>(initialState.url);
     const _entries = signal<NavigationHistoryEntry[]>(initialState.entries);
     const _currentIndex = signal<number>(initialState.index);
 
     // Storage for active subscriptions
     const _subscriptions = initialState.subscriptions;
+    let _createdCount = 0;
 
     // Public computed signals that reflect the router state
     const currentEntry = computed(() => _entries.value[_currentIndex.value]);
@@ -46,30 +45,30 @@ export const createHashNavigation = (): HashNavigation => {
 
     // Initialize the router state from the current location
     const initializeFromLocation = (): void => {
-        // Try to get existing state from the history API
-        const state = window.history.state as NavigationState | undefined;
-        const initialEntry = createHistoryEntry(window.location.href, state);
+        const currentUrl = window.location.href;
+        const existingEntryIndex = _entries.value.findIndex((entry) => entry.url === currentUrl);
 
         // Using batch to update multiple signals at once
         batch(() => {
-            _currentURL.value = initialEntry.url;
-            _entries.value = [initialEntry];
-            _currentIndex.value = 0;
+            if(existingEntryIndex === -1) {
+                // Try to get existing state from the history API
+                const state = window.history.state as NavigationState | undefined;
+                const initialEntry = createHistoryEntry(currentUrl, state);
+
+                _entries.value = [initialEntry];
+                _currentIndex.value = 0;
+            }
+            else {
+                // Reconcile with the preserved model so back/forward across
+                // router lifecycles keeps the correct history position
+                _currentIndex.value = existingEntryIndex;
+            }
         });
     };
 
-    // Helper function to update navigation state
-    const updateNavigationState = (
-        newCurrentIndex: number,
-        newUrl?: string
-    ) => {
-        // Using batch to update multiple signals at once
-        batch(() => {
-            if(newUrl) {
-                _currentURL.value = newUrl;
-            }
-            _currentIndex.value = newCurrentIndex;
-        });
+    // Helper function to update the current history index
+    const updateNavigationState = (newCurrentIndex: number) => {
+        _currentIndex.value = newCurrentIndex;
     };
 
     // Handle hash change events from the window
@@ -268,7 +267,6 @@ export const createHashNavigation = (): HashNavigation => {
             // Using batch to update multiple signals at once
             batch(() => {
                 _entries.value = newEntries;
-                _currentURL.value = fullUrl;
                 updateNavigationState(newEntries.length - 1);
             });
         }
@@ -284,16 +282,21 @@ export const createHashNavigation = (): HashNavigation => {
         const destination = _entries.value[entryIndex];
         const delta = entryIndex - _currentIndex.value;
 
+        // history.go(0) would reload the page, so skip traversal to the current entry
+        if(delta === 0) {
+            return;
+        }
+
         // Handle potential state update if options include state
-        const updatedDestination = options.state
-            ? replaceHistoryEntry(destination.url, options.state as NavigationState, entryIndex)
-            : destination;
+        if(options.state) {
+            replaceHistoryEntry(destination.url, options.state as NavigationState, entryIndex);
+        }
 
         // Use history.go to navigate through history
         window.history.go(delta);
 
         // Update navigation state
-        updateNavigationState(entryIndex, updatedDestination.url);
+        updateNavigationState(entryIndex);
     };
 
     const back = () => {
@@ -304,7 +307,7 @@ export const createHashNavigation = (): HashNavigation => {
         window.history.back();
 
         // Update navigation state
-        updateNavigationState(prevEntry.value.index, prevEntry.value.url);
+        updateNavigationState(prevEntry.value.index);
     };
 
     const goToPrev = () => {
@@ -312,7 +315,7 @@ export const createHashNavigation = (): HashNavigation => {
             window.history.back();
             return null;
         }
-        navigate(prevEntry.value.hash, { state: prevEntry.value.state, });
+        traverseTo(prevEntry.value.key);
     };
 
     const forward = () => {
@@ -322,47 +325,39 @@ export const createHashNavigation = (): HashNavigation => {
         }
 
         const nextIndex = _currentIndex.value + 1;
-        const destination = _entries.value[nextIndex];
 
         // Use history.forward to navigate forward
         window.history.forward();
 
         // Update navigation state
-        updateNavigationState(nextIndex, destination.url);
+        updateNavigationState(nextIndex);
     };
 
-    // Set up effect to synchronize URL with current entry
-    const unsubscribe = effect(() => {
-        const currentEntryValue = currentEntry.value;
-
-        if(currentEntryValue && getHash(_currentURL.value) !== getHash(currentEntryValue.url)) {
-            _currentURL.value = currentEntryValue.url;
-        }
-    });
-
     const create = () => {
-        // Initialize and set up event listeners
-        initializeFromLocation();
-        window.addEventListener('hashchange', handleHashChange);
+        // Only (re)initialize on the first create so concurrent instances
+        // share one model and a single hashchange listener
+        if(_createdCount === 0) {
+            initializeFromLocation();
+            window.addEventListener('hashchange', handleHashChange);
+        }
+        _createdCount++;
     };
 
     const destroy = (): void => {
+        if(_createdCount > 0) {
+            _createdCount--;
+        }
+
+        // Tear down only when the last active instance is destroyed
+        if(_createdCount > 0) {
+            return;
+        }
+
         window.removeEventListener('hashchange', handleHashChange);
 
         // Cancel all active subscriptions
         _subscriptions.forEach((unsub) => unsub());
         _subscriptions.clear();
-
-        const newInitialState = createInitialState();
-
-        batch(() => {
-            _currentURL.value = newInitialState.url;
-            _entries.value = newInitialState.entries;
-            _currentIndex.value = newInitialState.index;
-        });
-
-        // Cancel internal synchronization effect
-        unsubscribe();
     };
 
     // Return the public API

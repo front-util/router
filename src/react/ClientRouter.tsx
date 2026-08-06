@@ -1,6 +1,6 @@
 import { useComputed, useSignal } from '@preact/signals-react';
 import { useSignals } from '@preact/signals-react/runtime';
-import React, { memo, useEffect } from 'react';
+import React, { memo, useEffect, useRef } from 'react';
 
 import { getRouteItem } from '../helpers';
 import { ClientRouterProps } from '../types';
@@ -28,24 +28,45 @@ export const ClientRouter = memo<ClientRouterProps>(({
     });
     const Component = componentSignal.value;
 
+    // Track the last applied config and active subscription so the router is
+    // only re-created when the route group actually changes, not on every
+    // render with an inline routes object
+    const configRef = useRef<{ homeUrl: string; routeNames: string[]; } | null>(null);
+    const unsubscribeRef = useRef<VoidFunction | null>(null);
+
     useEffect(() => {
-        // Subscribe to route changes
-        const unsubscribe = router.create({
-            config: {
-                homeUrl,
-                routeNames: Object.keys(routes),
-            },
+        const nextConfig = {
+            homeUrl,
+            routeNames: Object.keys(routes),
+        };
+        const prevConfig = configRef.current;
+
+        if(prevConfig && JSON.stringify(prevConfig) === JSON.stringify(nextConfig)) {
+            return;
+        }
+        configRef.current = nextConfig;
+
+        if(unsubscribeRef.current) {
+            unsubscribeRef.current();
+        }
+
+        unsubscribeRef.current = router.create({
+            config  : nextConfig,
             onChange: (entry) => {
                 hashSignal.value = entry.hash;
             },
         });
+    }, [hashSignal, homeUrl, router, routes]);
 
-        // Cleanup subscription on unmount
+    useEffect(() => {
         return () => {
-            unsubscribe();
+            if(unsubscribeRef.current) {
+                unsubscribeRef.current();
+                unsubscribeRef.current = null;
+            }
             router.destroy();
         };
-    }, [hashSignal, homeUrl, router, routes]);
+    }, [router]);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -62,10 +83,7 @@ export const ClientRouter = memo<ClientRouterProps>(({
     }, []);
 
     return (
-        <div
-            className={className}
-            key={hashSignal.value}
-        >
+        <div className={className}>
             {!!Component && <Component {...router.currentEntry.value.getParams()} />}
         </div>
     );

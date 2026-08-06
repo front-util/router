@@ -57,7 +57,7 @@ describe('createHashNavigation', () => {
         nav.destroy();
     });
 
-    it('should create a hash navigation instance with correct initial state after navigation init and navigation not empty', () => {
+    it('should reconcile navigation state with current location on create', () => {
         const nav = createHashNavigation();
 
         expect(nav.currentEntry.value).toBeDefined();
@@ -68,20 +68,83 @@ describe('createHashNavigation', () => {
         nav.navigate('test1');
         nav.navigate('test2', { state: ['test'], });
 
-        expect(nav.entries.value.length).toEqual(3);
-        expect(nav.currentEntry.value.url).toBe('http://localhost:5000/test#/test2');
-        expect(nav.currentEntry.value.hash).toBe('test2');
-        expect(nav.currentEntry.value.state).toEqual(['test']);
-
+        // Simulate the URL being changed by an external navigation while the
+        // instance is not mounted
         window.location.href = 'http://localhost:5000/test#/test2';
         nav.create();
 
-        expect(nav.entries.value.length).toEqual(1);
-        expect(nav.canGoBack.value).toBeFalsy();
-        expect(nav.canGoForward.value).toBeFalsy();
+        // The model is preserved and reconciled to the current location
+        expect(nav.entries.value.length).toEqual(3);
         expect(nav.currentEntry.value.url).toBe('http://localhost:5000/test#/test2');
         expect(nav.currentEntry.value.hash).toBe('test2');
+        expect(nav.canGoBack.value).toBe(true);
+        expect(nav.canGoForward.value).toBe(false);
 
+        nav.destroy();
+    });
+
+    it('should reconcile index with the current location on create after back navigation', () => {
+        const nav = createHashNavigation();
+
+        nav.navigate('about');
+        nav.navigate('contact');
+
+        // Browser went back to 'about' while the instance was not mounted
+        window.location.href = 'http://localhost:5000/test#/about';
+        nav.create();
+
+        expect(nav.currentEntry.value.hash).toBe('about');
+        expect(nav.entries.value.length).toEqual(3);
+        expect(nav.canGoBack.value).toBe(true);
+        expect(nav.canGoForward.value).toBe(true);
+
+        nav.destroy();
+    });
+
+    it('should reset to a fresh model when the current location is unknown', () => {
+        const nav = createHashNavigation();
+
+        nav.navigate('about');
+        nav.navigate('contact');
+
+        // Location changed to a URL the instance has never seen
+        window.location.href = 'http://localhost:5000/test#/unknown';
+        nav.create();
+
+        expect(nav.entries.value.length).toEqual(1);
+        expect(nav.currentEntry.value.hash).toBe('unknown');
+        expect(nav.canGoBack.value).toBe(false);
+
+        nav.destroy();
+    });
+
+    it('should preserve navigation state after destroy', () => {
+        const nav = createHashNavigation();
+
+        nav.navigate('about');
+        nav.navigate('contact');
+
+        nav.destroy();
+
+        // The model is preserved for the next create cycle
+        expect(nav.entries.value.length).toEqual(3);
+        expect(nav.currentEntry.value.hash).toBe('contact');
+        expect(nav.canGoBack.value).toBe(true);
+    });
+
+    it('should not duplicate hashchange listeners when created twice', () => {
+        const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
+
+        const nav = createHashNavigation();
+
+        nav.create();
+        nav.create();
+
+        const hashChangeCalls = addEventListenerSpy.mock.calls.filter(([type]) => type === 'hashchange');
+
+        expect(hashChangeCalls.length).toBe(1);
+
+        addEventListenerSpy.mockRestore();
         nav.destroy();
     });
 
@@ -166,10 +229,14 @@ describe('createHashNavigation', () => {
         expect(nav.canGoForward.value).toBe(false);
         expect(nav.prevEntry.value?.hash).toBe('home');
 
+        vi.clearAllMocks();
+
         nav.goToPrev();
 
+        // goToPrev must traverse history, not push a duplicate entry
         expect(window.history.back).toHaveBeenCalledTimes(0);
-        expect(window.history.pushState).toHaveBeenCalled();
+        expect(window.history.pushState).not.toHaveBeenCalled();
+        expect(window.history.go).toHaveBeenCalledWith(-1);
 
         expect(nav.currentEntry.value.url).toContain('/home');
         expect(nav.canGoBack.value).toBe(true);
@@ -423,6 +490,24 @@ describe('createHashNavigation', () => {
 
         // Should not call history.go
         expect(window.history.go).not.toHaveBeenCalled();
+    });
+
+    it('should not reload the page when traversing to the current entry', () => {
+        const nav = createHashNavigation();
+
+        nav.navigate('page1');
+        nav.navigate('page2');
+
+        vi.clearAllMocks();
+
+        const currentKey = nav.currentEntry.value.key;
+
+        nav.traverseTo(currentKey);
+
+        // history.go(0) is a page reload, must be avoided
+        expect(window.history.go).not.toHaveBeenCalled();
+        expect(nav.currentEntry.value.hash).toBe('page2');
+        expect(nav.currentEntry.value.key).toBe(currentKey);
     });
 
     it('should handle traverseTo with state update', () => {
