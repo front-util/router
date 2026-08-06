@@ -549,6 +549,70 @@ describe('hashRouter', () => {
         });
     });
 
+    describe('navigateTo', () => {
+        it('should substitute params into the pattern and navigate', () => {
+            router.create({
+                onChange,
+                config: {
+                    homeUrl   : 'home',
+                    routeNames: ['home', 'user/:category/:id'],
+                },
+            });
+
+            router.navigateTo('/user/:category/:id', { category: 5, id: 10, });
+
+            expect(router.getHash()).toBe('user/5/10');
+            expect(router.currentEntry.value.getParams()).toEqual({ category: '5', id: '10', });
+            expect(router.canGoBack.value).toBe(true);
+        });
+
+        it('should call navigation.navigate with the built url', () => {
+            const navigateSpy = vi.spyOn(router._navigation, 'navigate');
+
+            router.navigateTo('user/:id', { id: 7, });
+
+            expect(navigateSpy).toHaveBeenCalledWith('user/7', expect.objectContaining({
+                state: undefined,
+            }));
+        });
+
+        it('should navigate to a static pattern without params', () => {
+            const navigateSpy = vi.spyOn(router._navigation, 'navigate');
+
+            router.navigateTo('about');
+
+            expect(navigateSpy).toHaveBeenCalledWith('about', expect.objectContaining({
+                state: undefined,
+            }));
+        });
+
+        it('should pass state through to the navigation', () => {
+            const navigateSpy = vi.spyOn(router._navigation, 'navigate');
+
+            router.navigateTo('user/:id', { id: 1, }, { source: 'button', });
+
+            expect(navigateSpy).toHaveBeenCalledWith('user/1', expect.objectContaining({
+                state: { source: 'button', },
+            }));
+        });
+
+        it('should navigate to a route with query params', () => {
+            router.create({
+                onChange,
+                config: {
+                    homeUrl   : 'home',
+                    routeNames: ['home', 'user/:id'],
+                },
+            });
+
+            router.navigateTo('user/:id?tab=settings', { id: 9, });
+
+            expect(router.getHash()).toBe('user/9?tab=settings');
+            expect(router.currentEntry.value.getParams()).toEqual({ id: '9', });
+            expect(router.currentEntry.value.getQuery()).toEqual({ tab: 'settings', });
+        });
+    });
+
     describe('goBack and goToPrev', () => {
         it('should call navigation.back()', () => {
             const backSpy = vi.spyOn(router._navigation, 'back');

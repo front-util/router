@@ -96,6 +96,21 @@ export const getRouteItem = <T>(map: Record<string, T>, hash: string) => {
     }
 };
 
+export const getUrlFromPattern = (
+    pattern: string,
+    params?: Record<string, string | number>
+): string => {
+    if(!params) {
+        return pattern;
+    }
+
+    // Replace :paramName segments with values, keeping the placeholder
+    // untouched when a value for the parameter is missing
+    return pattern.replaceAll(/:(\w+)/g, (match, name: string) => {
+        return String(params[name] ?? match);
+    });
+};
+
 export const getParamsFromUrl = (pattern: string, hash: string): Record<string, string> => {
     const params: Record<string, string> = {};
 

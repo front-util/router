@@ -103,6 +103,11 @@ export interface HashRouter extends Pick<HashNavigation, 'entries' | 'canGoBack'
     create      : (config: SubscribeChangeConfig) => VoidFunction;
     subscribe   : (callback: NavigationCb) => VoidFunction;
     navigate    : (hash: string, state?: Record<string, unknown>) => void;
+    navigateTo  : (
+        pattern: string,
+        params?: Record<string, string | number>,
+        state?: Record<string, unknown>
+    ) => void;
     replaceState: (config?: { state?: Record<string, unknown>; hash?: string; }) => void;
     goBack      : VoidFunction;
     goToPrev    : VoidFunction;

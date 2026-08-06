@@ -8,6 +8,7 @@ import {
     getHash,
     getParamsFromUrl,
     getRouteItem,
+    getUrlFromPattern,
     isRouteMatch,
     parseQueryParams
 } from '../helpers';
@@ -322,5 +323,44 @@ describe('helpers/getParamsFromUrl', () => {
         expect(getParamsFromUrl('/users/:name', '/users/%zz')).toEqual({
             name: '%zz',
         });
+    });
+});
+
+describe('helpers/getUrlFromPattern', () => {
+    it('should substitute params into the pattern', () => {
+        expect(getUrlFromPattern('/user/:category/:id', { category: 5, id: 10, })).toBe('/user/5/10');
+    });
+
+    it('should substitute string and number values', () => {
+        expect(getUrlFromPattern('/users/:name/posts/:postId', { name: 'john', postId: 42, })).toBe('/users/john/posts/42');
+    });
+
+    it('should substitute params in patterns without leading slash', () => {
+        expect(getUrlFromPattern('user/:id', { id: 7, })).toBe('user/7');
+    });
+
+    it('should substitute params in the middle and end segments', () => {
+        expect(getUrlFromPattern('/repos/:owner/:repo/issues', { owner: 'facebook', repo: 'react', })).toBe('/repos/facebook/react/issues');
+    });
+
+    it('should keep the placeholder for missing params', () => {
+        expect(getUrlFromPattern('/user/:category/:id', { category: 5, })).toBe('/user/5/:id');
+    });
+
+    it('should ignore extra params not present in the pattern', () => {
+        expect(getUrlFromPattern('/user/:id', { id: 10, extra: 1, })).toBe('/user/10');
+    });
+
+    it('should leave the pattern unchanged when no params are provided', () => {
+        expect(getUrlFromPattern('/user/:id')).toBe('/user/:id');
+        expect(getUrlFromPattern('/about')).toBe('/about');
+    });
+
+    it('should preserve query params in the pattern', () => {
+        expect(getUrlFromPattern('/user/:id?tab=settings', { id: 5, })).toBe('/user/5?tab=settings');
+    });
+
+    it('should not substitute params in non-parameter segments', () => {
+        expect(getUrlFromPattern('/repos/:owner/repo/issues', { owner: 'facebook', })).toBe('/repos/facebook/repo/issues');
     });
 });
