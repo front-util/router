@@ -10,6 +10,6 @@ description: Добавление нового маршрута в проект 
 4. Если маршрут используется в React, обнови пропсы `ClientRouter` в соответствующем компоненте.
 5. Запусти валидацию:
 ```bash
-bun run validate
+npm run validate
 ```
 6. Добавь тест на новый маршрут в `src/__tests__/hashRouter.spec.ts`.

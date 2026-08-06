@@ -60,9 +60,6 @@ npm install @front-utils/router
 
 # Using yarn
 yarn add @front-utils/router
-
-# Using bun
-bun add @front-utils/router
 ```
 
 ## Browser Compatibility
