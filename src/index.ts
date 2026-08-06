@@ -3,10 +3,10 @@ export * from './core/hashRouter';
 export * from './core/hashNavigation';
 
 export {
-    isRouteMatch,
-    getHash,
     createHash,
+    getHash,
     getRouteItem,
+    isRouteMatch,
 } from './helpers';
 
 // React exports

@@ -1,15 +1,15 @@
 import { computed } from '@preact/signals';
 
 import { getParamsFromUrl, getRouteItem, getRouteMap, parseQueryParams } from '../helpers';
-
-import { 
-    HashNavigation, 
-    HashRouter, 
-    InitializeRouterConfig, 
-    NavigationCb, 
-    NavigationHistoryEntry, 
-    QueryParams, 
-    SubscribeChangeConfig 
+import {
+    HashNavigation,
+    HashRouter,
+    InitializeRouterConfig,
+    NavigationCb,
+    NavigationHistoryEntry,
+    NavigationState,
+    QueryParams,
+    SubscribeChangeConfig
 } from '../types';
 import { createHashNavigation } from './hashNavigation';
 
@@ -27,9 +27,9 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
      * @param hash - The hash to check
      * @returns boolean indicating if the hash exists in routes
      */
-    const checkExistPage = (hash: string): boolean => {
+    const isPageExists = (hash: string): boolean => {
         if(!routerConfig) return false;
-    
+
         // Remove the leading '#' if present for comparison
         const normalizedHash = hash.startsWith('#') ? hash.substring(1) : hash;
         const pattern = getRouteItem(getRouteMap(routerConfig?.routeNames ?? []), normalizedHash);
@@ -37,7 +37,7 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
         return !!pattern;
     };
 
-    const getNavigationStatus = (hash: string) => checkExistPage(hash) ? 'success' : 'notfound';
+    const getNavigationStatus = (hash: string) => isPageExists(hash) ? 'success' : 'notfound';
 
     /**
      * Helper function to subscribe to navigation events
@@ -58,17 +58,18 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
      * Replaces the current state and/or hash
      * @param config - Optional configuration for the state replacement
      */
-    const replaceState = (config?: { state?: Record<string, unknown>; hash?: string }): void => {        
-        if(!config) return;    
-        const currentEntry = hashNavigation.currentEntry.value;
-    
+    const replaceState = (config?: { state?: Record<string, unknown>; hash?: string; }): void => {
+        if(!config) return;
+
         if(config.state && !config.hash) {
             hashNavigation.updateCurrentEntry(config.state);
             return;
         }
-    
+
+        const currentEntry = hashNavigation.currentEntry.value;
+
         if(config.hash && config.hash !== currentEntry.hash) {
-            hashNavigation.updateCurrentEntryHash(config.hash, config.state || currentEntry.state);
+            hashNavigation.updateCurrentEntryHash(config.hash, config.state || (currentEntry.state as NavigationState));
         }
     };
 
@@ -82,35 +83,37 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
 
         // Store the configuration for future use
         routerConfig = initConfig;
-  
+
         let prevLocation: NavigationHistoryEntry | null = null;
 
         // Set initial home as initial hash if it empty
-        if(!window.location.hash) {            
+        if(!window.location.hash) {
             hashNavigation.updateCurrentEntryHash(initConfig.homeUrl);
         }
-  
+
         hashNavigation.create();
-  
+
         // Subscribe to navigation events
         const unsubscribe = subscribeToNavigationEvents(
             (entry, prevEntry, navigationStatus) => {
-                // Only trigger onChange if this is a different location                
-                if(!prevLocation || prevLocation.url !== entry.url) {                    
-                    onChange(entry, prevEntry, navigationStatus);
-                    prevLocation = entry;
+                // Only trigger onChange if this is a different location
+                if(prevLocation && prevLocation.url === entry.url) {
+                    return;
                 }
+
+                onChange(entry, prevEntry, navigationStatus);
+                prevLocation = entry;
             }
         );
-  
+
         // Check current hash
         const currentHash = hashNavigation.currentEntry.value.hash;
-        
+
         // If current hash is empty, navigate to home URL
-        if(currentHash && !checkExistPage(currentHash)) {            
+        if(currentHash && !isPageExists(currentHash)) {
             hashNavigation.updateCurrentEntryHash(initConfig.homeUrl);
         }
-  
+
         return unsubscribe;
     };
 
@@ -151,7 +154,7 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
     const hasPage = (hash?: string): boolean => {
         const hashToCheck = hash || hashNavigation.currentEntry.value.hash;
 
-        return checkExistPage(hashToCheck);
+        return isPageExists(hashToCheck);
     };
 
     const getHash = () => hashNavigation.currentEntry.value.hash;
@@ -175,7 +178,7 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
         };
     });
 
-    const state = computed(() => hashNavigation.currentEntry.value.state);
+    const state = computed(() => hashNavigation.currentEntry.value.state as NavigationState);
 
     const hash = computed(() => hashNavigation.currentEntry.value.hash);
 

@@ -1,29 +1,29 @@
-import React, { memo, useEffect } from 'react';
+import { useComputed, useSignal } from '@preact/signals-react';
 import { useSignals } from '@preact/signals-react/runtime';
-import { useSignal, useComputed } from '@preact/signals-react';
+import React, { memo, useEffect } from 'react';
 
-import { ClientRouterProps } from '../types';
 import { getRouteItem } from '../helpers';
+import { ClientRouterProps } from '../types';
 
 /**
  * ClientRouter component for React applications
  * Renders components based on the current hash route
  */
-export const ClientRouter = memo<ClientRouterProps>(({ 
+export const ClientRouter = memo<ClientRouterProps>(({
     className,
-    router, 
-    routes, 
+    router,
+    routes,
     homeUrl,
-    notFoundComponent: NotFound, 
+    notFoundComponent: NotFound,
 }) => {
     useSignals();
     const hashSignal = useSignal<string | undefined>(undefined);
 
     const componentSignal = useComputed(() => {
-        if(typeof hashSignal.value === 'undefined') {
+        if(hashSignal.value === undefined) {
             return null;
         }
-        
+
         return getRouteItem(routes, hashSignal.value) ?? NotFound;
     });
     const Component = componentSignal.value;
@@ -62,7 +62,7 @@ export const ClientRouter = memo<ClientRouterProps>(({
     }, []);
 
     return (
-        <div 
+        <div
             className={className}
             key={hashSignal.value}
         >
