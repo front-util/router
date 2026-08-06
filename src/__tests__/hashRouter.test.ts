@@ -243,6 +243,64 @@ describe('hashRouter', () => {
             expect(onChange).toHaveBeenCalledTimes(1);
         });
 
+        it('should call onChange once when initial hash is not a valid route', () => {
+            window.location.hash = '#invalid-route';
+
+            router.create({
+                onChange,
+                config: {
+                    homeUrl   : 'home',
+                    routeNames: ['home', 'about', 'contact'],
+                },
+            });
+
+            expect(router.getHash()).toEqual('home');
+            expect(onChange).toHaveBeenCalledTimes(1);
+            expect(onChange).toHaveBeenLastCalledWith(
+                expect.objectContaining({ hash: 'home', }),
+                null,
+                'success'
+            );
+        });
+
+        it('should stop previous onChange when create is called again without destroy', () => {
+            const config = {
+                homeUrl   : 'home',
+                routeNames: ['home', 'about'],
+            };
+            const onChange2 = vi.fn();
+
+            router.create({ onChange, config, });
+
+            expect(onChange).toHaveBeenCalledTimes(1);
+
+            onChange.mockClear();
+
+            router.create({ onChange: onChange2, config, });
+
+            expect(onChange2).toHaveBeenCalledTimes(1);
+            expect(onChange).toHaveBeenCalledTimes(0);
+
+            router.navigate('about');
+
+            expect(onChange).toHaveBeenCalledTimes(0);
+            expect(onChange2).toHaveBeenCalledTimes(2);
+        });
+
+        it('should set home hash with leading slash', () => {
+            router.create({
+                onChange,
+                config: {
+                    homeUrl   : '/home',
+                    routeNames: ['home', 'about', 'contact'],
+                },
+            });
+
+            expect(router.getHash()).toEqual('home');
+            expect(router.currentEntry.value.url).toContain('#/home');
+            expect(onChange).toHaveBeenCalledTimes(1);
+        });
+
         it('should set home correct hash if router with params', () => {
             window.location.hash = '#/profile/100';
             const localRouter = createHashRouter(createHashNavigation());
@@ -264,7 +322,7 @@ describe('hashRouter', () => {
     });
 
     describe('destroy', () => {
-        it('should correct clear router data after destroy', () => {
+        it('should preserve router data after destroy', () => {
             router.create({
                 onChange,
                 config: {
@@ -280,11 +338,12 @@ describe('hashRouter', () => {
             router.destroy();
             onChange.mockReset();
 
+            // The navigation model is preserved for the next create cycle
             expect(router.currentEntry.value.hash).toEqual('home/100');
             expect(router.currentEntry.value.getParams()).toEqual({ id: '100', });
             expect(router.currentEntry.value.url).toEqual('http://localhost:3000/#/home/100');
             expect(router.currentEntry.value.pattern).toEqual('home/:id');
-            expect(router.entries.value.length).toEqual(1);
+            expect(router.entries.value.length).toEqual(5);
 
             router.navigate('test');
 
@@ -431,13 +490,29 @@ describe('hashRouter', () => {
 
     describe('replaceState', () => {
         it('should update state without navigation when only state is provided', () => {
-            const updateSpy = vi.spyOn(router._navigation, 'updateCurrentEntry');
             const navigateSpy = vi.spyOn(router._navigation, 'navigate');
 
             router.replaceState({ state: { test: 'value', }, });
 
-            expect(updateSpy).toHaveBeenCalledWith({ test: 'value', });
+            expect(router.currentEntry.value.state).toEqual({ test: 'value', });
             expect(navigateSpy).not.toHaveBeenCalled();
+        });
+
+        it('should update state when hash is unchanged', () => {
+            router.create({
+                onChange,
+                config: {
+                    homeUrl   : 'home',
+                    routeNames: ['home', 'about'],
+                },
+            });
+            router.navigate('about');
+
+            router.replaceState({ hash: 'about', state: { saved: true, }, });
+
+            expect(router.getHash()).toBe('about');
+            expect(router.currentEntry.value.state).toEqual({ saved: true, });
+            expect(router.entries.value.length).toBe(2);
         });
 
         it('should not navigate when hash is provided', () => {

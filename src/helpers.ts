@@ -7,13 +7,30 @@ import type {
 // Utility functions
 const generateRandomId = () => Math.random().toString(36).substring(2, 9);
 
+const safeDecodeURIComponent = (value: string): string => {
+    try {
+        return decodeURIComponent(value);
+    }
+    catch{
+        return value;
+    }
+};
+
 export const getHash = (url: string): string => {
     const urlObject = new URL(url);
 
     return urlObject.hash.replace(/^#\/?#?/, '') || '/';
 };
 
-export const createHash = (hash: string) => `/${hash}`;
+export const createHash = (hash: string): string => {
+    let normalized = hash.replace(/^#+/, '').replace(/^\/+/, '');
+
+    while(normalized.endsWith('/')) {
+        normalized = normalized.slice(0, -1);
+    }
+
+    return `/${normalized}`;
+};
 
 export const createHistoryEntry = (
     url: string,
@@ -47,8 +64,12 @@ export const isRouteMatch = (pattern: string, hash: string | null | undefined) =
         return false;
     }
 
-    // Replace route parameters with a regex pattern that matches any characters
-    const patternRegex = pattern.replaceAll(/:\w+/g, '([^/]+)');
+    // Replace route parameters with a placeholder, escape regex special
+    // characters in static segments, then restore the parameter matcher
+    const patternRegex = pattern
+        .replaceAll(/:\w+/g, '@@PARAM@@')
+        .replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
+        .replaceAll('@@PARAM@@', '([^/]+)');
 
     // Create a regular expression for matching the URL
     const regex = new RegExp(`^${patternRegex}$`);
@@ -102,26 +123,30 @@ export const getParamsFromUrl = (pattern: string, hash: string): Record<string, 
         const normalizedValue = paramValue.split('?', 1)[0];
 
         // Add to the params object
-        params[paramName] = normalizedValue;
+        params[paramName] = safeDecodeURIComponent(normalizedValue);
     }
 
     return params;
 };
 
 export const parseQueryParams = <T extends QueryParams = QueryParams>(urlPart: string): T => {
-    const queryString = urlPart.split('?', 2)[1];
+    const separatorIndex = urlPart.indexOf('?');
 
-    if(!queryString) {
+    if(separatorIndex === -1) {
         return {} as T;
     }
 
+    const queryString = urlPart.slice(separatorIndex + 1);
     const params = queryString.split('&');
     const queryParams: { [key: string]: string; } = {};
 
     for(const param of params) {
-        const [key, value] = param.split('=', 2);
+        const separatorIndex = param.indexOf('=');
+        const hasSeparator = separatorIndex !== -1;
+        const key = safeDecodeURIComponent(hasSeparator ? param.slice(0, separatorIndex) : param);
+        const value = hasSeparator ? safeDecodeURIComponent(param.slice(separatorIndex + 1)) : '';
 
-        queryParams[key] = value ? decodeURIComponent(value) : '';
+        queryParams[key] = value;
     }
 
     return queryParams as T;

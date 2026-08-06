@@ -3,11 +3,13 @@ import { describe, expect, it } from 'vitest';
 import type { NavigationState } from '../types';
 
 import {
+    createHash,
     createHistoryEntry,
     getHash,
     getParamsFromUrl,
     getRouteItem,
-    isRouteMatch
+    isRouteMatch,
+    parseQueryParams
 } from '../helpers';
 
 describe('helpers/getHash', () => {
@@ -34,6 +36,30 @@ describe('helpers/getHash', () => {
 
     it('should handle URL objects', () => {
         expect(getHash(new URL('https://example.com#section').href)).toBe('section');
+    });
+});
+
+describe('helpers/createHash', () => {
+    it('should keep an already normalized hash unchanged', () => {
+        expect(createHash('about')).toBe('/about');
+        expect(createHash('profile/100')).toBe('/profile/100');
+    });
+
+    it('should strip leading slash and hash mark', () => {
+        expect(createHash('/about')).toBe('/about');
+        expect(createHash('#/about')).toBe('/about');
+        expect(createHash('#about')).toBe('/about');
+        expect(createHash('#//about')).toBe('/about');
+    });
+
+    it('should strip trailing slash', () => {
+        expect(createHash('about/')).toBe('/about');
+        expect(createHash('/about/')).toBe('/about');
+    });
+
+    it('should handle empty hash', () => {
+        expect(createHash('')).toBe('/');
+        expect(createHash('/')).toBe('/');
     });
 });
 
@@ -130,6 +156,14 @@ describe('helpers/isRouteMatch', () => {
         expect(isRouteMatch('/dashboard', '/dashboard?query1=test')).toBe(true);
         expect(isRouteMatch('/dashboard', '/dashboard#query1=test')).toBe(false);
     });
+
+    it('should escape regex special characters in static segments', () => {
+        expect(isRouteMatch('v1.list/:id', 'v1.list/1')).toBe(true);
+        expect(isRouteMatch('v1.list/:id', 'v1Xlist/1')).toBe(false);
+        expect(isRouteMatch('v1.list/:id', 'v1.list/1/extra')).toBe(false);
+        expect(isRouteMatch('users+extra/:id', 'users+extra/1')).toBe(true);
+        expect(isRouteMatch('users+extra/:id', 'usersXextra/1')).toBe(false);
+    });
 });
 
 describe('helpers/getRouteItem', () => {
@@ -184,6 +218,34 @@ describe('helpers/getRouteItem', () => {
         const routes = {};
 
         expect(getRouteItem(routes, '/any-route')).toBeUndefined();
+    });
+});
+
+describe('helpers/parseQueryParams', () => {
+    it('should parse simple query params', () => {
+        expect(parseQueryParams('profile?param1=test1&param2=test2')).toEqual({ param1: 'test1', param2: 'test2', });
+    });
+
+    it('should keep "=" inside values', () => {
+        expect(parseQueryParams('profile?a=b=c')).toEqual({ a: 'b=c', });
+        expect(parseQueryParams('profile?url=http://x?y=1')).toEqual({ url: 'http://x?y=1', });
+    });
+
+    it('should decode keys and values', () => {
+        expect(parseQueryParams('profile?q=1%202&key%20with%20space=value')).toEqual({ 'q': '1 2', 'key with space': 'value', });
+    });
+
+    it('should handle params without value', () => {
+        expect(parseQueryParams('profile?flag&a=1')).toEqual({ flag: '', a: '1', });
+    });
+
+    it('should return empty object without query', () => {
+        expect(parseQueryParams('profile')).toEqual({});
+    });
+
+    it('should not throw on malformed percent-encoding', () => {
+        expect(() => parseQueryParams('profile?q=%zz%')).not.toThrow();
+        expect(parseQueryParams('profile?q=%zz%')).toEqual({ q: '%zz%', });
     });
 });
 
@@ -243,6 +305,22 @@ describe('helpers/getParamsFromUrl', () => {
     it('should handle parameters with query params', () => {
         expect(getParamsFromUrl('/categories/:name', '/categories/electronics?testQuery=test')).toEqual({
             name: 'electronics',
+        });
+    });
+
+    it('should decode parameter values', () => {
+        expect(getParamsFromUrl('/users/:name', '/users/%D0%B0%D0%BB%D0%B5%D0%BA%D1%81')).toEqual({
+            name: 'алекс',
+        });
+        expect(getParamsFromUrl('/users/:name', '/users/ivan%20petrov')).toEqual({
+            name: 'ivan petrov',
+        });
+    });
+
+    it('should not throw on malformed percent-encoding', () => {
+        expect(() => getParamsFromUrl('/users/:name', '/users/%zz')).not.toThrow();
+        expect(getParamsFromUrl('/users/:name', '/users/%zz')).toEqual({
+            name: '%zz',
         });
     });
 });

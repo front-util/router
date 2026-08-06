@@ -835,6 +835,30 @@ export default {
 </script>
 ```
 
+## Key Behaviors
+
+### Multiple instances and shared history
+
+`window.history` is a single, global resource. All `HashRouter`/`HashNavigation` instances created over the same underlying navigation share one history model:
+
+- The `hashRouter`/`hashNavigation` singletons share their model by design. When a page (e.g. an `ClientRouter`) unmounts, `destroy()` keeps the model intact so a later `create()` reconciles to the current URL — this is what makes **back/forward across page groups** work correctly instead of inverting or duplicating entries.
+- `create()`/`destroy()` are ref-counted: concurrently mounted instances share one `hashchange` listener and one model, and destroying one instance does not tear down the others.
+- On `create()`, the current URL is matched against the preserved entries and the history index is restored; an unknown URL starts a fresh model.
+
+### Hash normalization
+
+Hashes passed to `navigate()`, `updateCurrentEntryHash()` and `homeUrl` are normalized: leading `#`/`/` and trailing `/` are stripped, so `'/home'`, `'#/home'`, `'home/'` and `'home'` are equivalent and always produce `#/home`.
+
+### Route matching
+
+- Route patterns are matched **first match wins** — declare more specific routes (e.g. `users/me`) before parameterized ones (`users/:id`).
+- Regex special characters in static segments are escaped, so a dot in `v1.list/:id` matches a literal dot.
+- Route parameter values and query keys/values are URL-decoded; values may contain `=` (only the first `=` is treated as a separator).
+
+### ClientRouter
+
+`ClientRouter` re-creates the underlying router only when the route group (`routes`/`homeUrl` content) actually changes — passing an inline `routes` object each render does not reset navigation state. Route components are switched by identity and re-render in place on parameter-only navigation.
+
 ## Contract Interfaces
 
 The library is built on the following TypeScript interfaces:
