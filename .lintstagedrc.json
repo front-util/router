@@ -1,8 +1,8 @@
 {
     "src/**/*.{ts,tsx}": [
-        "bun run check-lint"
+        "npm run check-lint"
     ],
     "src/**/*.{tsx,ts}": [
-        "bash -c 'bun run check-types'"
+        "bash -c 'npm run check-types'"
     ]
 }

@@ -38,13 +38,13 @@
     "check-lint": "eslint --max-warnings=0 --fix",
     "check-types": "tsc --noEmit",
     "test": "vitest run",
-    "validate": "bun run check-lint & bun run check-types & bun run test",
+    "validate": "npm run check-lint & npm run check-types & npm run test",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build": "rm -rf dist && rm -rf types && bun run build:types && bun run build:rspack",
+    "build": "rm -rf dist && rm -rf types && npm run build:types && npm run build:rspack",
     "build:rspack": "rspack build",
     "build:types": "tsc --p tsconfig.build.json",
-    "pub": "bun run build && npm publish --access public"
+    "pub": "npm run build && npm publish --access public"
   },
   "browserslist": [
     "chrome > 83",
@@ -52,7 +52,7 @@
   ],
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged --no-stash",
-    "pre-push": "bun run test",
+    "pre-push": "npm run test",
     "preserveUnused": true
   },
   "publishConfig": {

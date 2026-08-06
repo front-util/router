@@ -6,17 +6,17 @@ description: Запуск тестов и покрытие
 
 1. Запусти тесты разово:
 ```bash
-bun run test
+npm run test
 ```
 
 2. Запусти тесты в режиме наблюдения во время разработки:
 ```bash
-bun run test:watch
+npm run test:watch
 ```
 
 3. Проверь покрытие тестами:
 ```bash
-bun run test:coverage
+npm run test:coverage
 ```
 
 4. Все новые функции ДОЛЖНЫ покрываться тестами в `src/__tests__/`.
