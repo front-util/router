@@ -1,6 +1,6 @@
 import { computed } from '@preact/signals';
 
-import { getParamsFromUrl, getRouteItem, getRouteMap, parseQueryParams } from '../helpers';
+import { getParamsFromUrl, getRouteItem, getRouteMap, getUrlFromPattern, parseQueryParams } from '../helpers';
 import {
     HashNavigation,
     HashRouter,
@@ -141,6 +141,20 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
     };
 
     /**
+     * Navigates to a route pattern substituting params into the URL
+     * @param pattern - The route pattern, e.g. '/user/:category/:id'
+     * @param params - Optional object of params to substitute, e.g. { category: 5, id: 10 }
+     * @param state - Optional state to associate with this navigation
+     */
+    const navigateTo = (
+        pattern: string,
+        params?: Record<string, string | number>,
+        state?: Record<string, unknown>
+    ) => {
+        return navigate(getUrlFromPattern(pattern, params), state);
+    };
+
+    /**
      * Navigates back in history
      */
     const goBack = (): void => {
@@ -208,6 +222,7 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
         create,
         subscribe,
         navigate,
+        navigateTo,
         replaceState,
         goBack,
         goToPrev,

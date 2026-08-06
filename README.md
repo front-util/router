@@ -120,6 +120,7 @@ HashRouter provides a higher-level API for common routing operations, with easie
 - `create(config)` - Initialize the router and subscribe to location changes
 - `subscribe(callback)` - Subscribe to history changes
 - `navigate(hash, state)` - Navigate to a specific hash with optional state
+- `navigateTo(pattern, params?, state?)` - Navigate to a route pattern, substituting params into the URL, e.g. `router.navigateTo('/user/:category/:id', { category: 5, id: 10 })` navigates to `/user/5/10`
 - `replaceState(config)` - Replace the current state and/or hash
 - `goBack()` - Navigate back in history
 - `goToPrev()` - Alias for goBack
@@ -219,6 +220,10 @@ hashRouter.navigate('profile', {
   userId: 123, 
   viewMode: 'edit' 
 });
+
+// Navigate to a parameterized route, substituting params into the URL
+hashRouter.navigateTo('/user/:category/:id', { category: 5, id: 10 }); // -> #/user/5/10
+hashRouter.navigateTo('/user/:id?tab=settings', { id: 7 }); // -> #/user/7?tab=settings
 
 // Check if current route is valid
 if (hashRouter.hasPage()) {
