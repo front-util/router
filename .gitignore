@@ -29,3 +29,6 @@ dist
 examples-dist
 types
 .qodo
+
+# playwright mcp output
+.playwright-mcp

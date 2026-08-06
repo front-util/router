@@ -44,6 +44,7 @@
     "build": "rm -rf dist && rm -rf types && npm run build:types && npm run build:rspack",
     "build:rspack": "rspack build",
     "build:types": "tsc --p tsconfig.build.json",
+    "example": "vite examples/react",
     "pub": "npm run build && npm publish --access public"
   },
   "browserslist": [
