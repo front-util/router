@@ -1,13 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { 
-    getHash, 
-    createHistoryEntry, 
-    isRouteMatch, 
-    getRouteItem, 
-    getParamsFromUrl 
-} from '../helpers';
 import type { NavigationState } from '../types';
+
+import {
+    createHistoryEntry,
+    getHash,
+    getParamsFromUrl,
+    getRouteItem,
+    isRouteMatch
+} from '../helpers';
 
 describe('helpers/getHash', () => {
     it('should extract hash from URL', () => {
@@ -70,13 +71,13 @@ describe('helpers/createHistoryEntry', () => {
 
     it('should generate unique keys and IDs', () => {
         const entries = Array.from({ length: 10, }, () => createHistoryEntry('https://example.com'));
-    
+
         // Check if all keys are unique
         const keys = entries.map((entry) => entry.key);
         const uniqueKeys = new Set(keys);
 
         expect(uniqueKeys.size).toBe(entries.length);
-    
+
         // Check if all IDs are unique
         const ids = entries.map((entry) => entry.id);
         const uniqueIds = new Set(ids);
@@ -87,7 +88,7 @@ describe('helpers/createHistoryEntry', () => {
     it('should create an entry with getState method that returns the state', () => {
         const state = { data: 'test-data', };
         const entry = createHistoryEntry('https://example.com', state);
-    
+
         expect(entry.state).toBe(state);
     });
 });
@@ -116,7 +117,7 @@ describe('helpers/isRouteMatch', () => {
     });
 
     it('should handle null or undefined hash', () => {
-        expect(isRouteMatch('/home', null as unknown as string)).toBe(false);
+        expect(isRouteMatch('/home', null)).toBe(false);
         expect(isRouteMatch('/home', undefined as unknown as string)).toBe(false);
     });
 

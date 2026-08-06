@@ -1,34 +1,43 @@
-import { utils } from '@front-utils/linter';
+import { configs } from '@front-utils/linter';
+import { defineConfig } from 'eslint/config';
 
-// @front-utils/linter sets both `project` and `projectService` in parserOptions;
-// typescript-eslint >=8.47 rejects that combination. projectService supersedes
-// `project`, so drop it for the ts configs.
-const stripRedundantProject = (type, config) => {
-    if(type !== 'ts') {
-        return config;
-    }
+const sourceFiles = ['src/**/*.{ts,tsx,js}', 'vitest.config.ts'];
 
-    const parserOptions = config.languageOptions?.parserOptions;
-
-    if(parserOptions?.projectService && parserOptions.project) {
-        return {
-            ...config,
-            languageOptions: {
-                ...config.languageOptions,
-                parserOptions: {
-                    ...parserOptions,
-                    project: undefined,
-                },
-            },
-        };
-    }
-
-    return config;
-};
-
-export default utils.createEslintConfig({
-    types: ['ts', 'react'],
-    files: ['src/**/*.{ts,tsx,js}', 'vitest.config.ts'],
-    typesAdapter: stripRedundantProject,
-});
-
+export default defineConfig([
+    defineConfig({
+        extends: configs.react,
+        files  : sourceFiles,
+    }),
+    {
+        files: sourceFiles,
+        rules: {
+            // The router compares URL hashes — not cryptographic secrets
+            'security/detect-possible-timing-attacks': 'off',
+        },
+    },
+    {
+        files: ['src/**/*.tsx'],
+        rules: {
+            // React component files are PascalCase
+            'check-file/filename-naming-convention': ['error', {
+                '**/*.tsx': 'PASCAL_CASE',
+            }],
+        },
+    },
+    {
+        files: ['src/**/*.test.{ts,tsx}'],
+        rules: {
+            // Tests intentionally use `any` for browser API mocks
+            '@typescript-eslint/no-unsafe-assignment'   : 'off',
+            '@typescript-eslint/no-unsafe-call'         : 'off',
+            '@typescript-eslint/no-unsafe-member-access': 'off',
+            '@typescript-eslint/no-unsafe-argument'     : 'off',
+            '@typescript-eslint/no-unsafe-return'       : 'off',
+            '@typescript-eslint/unbound-method'         : 'off',
+            'sonarjs/prefer-specific-assertions'        : 'off',
+            'sonarjs/super-linear-regex'                : 'off',
+            'unicorn/no-non-function-verb-prefix'       : 'off',
+            'unicorn/prefer-location-assign'            : 'off',
+        },
+    },
+]);
