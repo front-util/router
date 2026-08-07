@@ -1,0 +1,76 @@
+import { ClientRouter, hashRouter } from '@front-utils/router';
+import React, { useEffect, useState } from 'react';
+
+import AboutPage from '../pages/AboutPage';
+import HomePage from '../pages/HomePage';
+import NotFoundPage from '../pages/NotFoundPage';
+import ProductPage from '../pages/ProductPage';
+import UserProfilePage from '../pages/UserProfilePage';
+
+// Create a map of routes to components with typed parameters
+const routes = {
+    'home'                           : HomePage,
+    'about'                          : AboutPage,
+    'users/:userId'                  : UserProfilePage,
+    'products/:categoryId/:productId': ProductPage,
+};
+
+/**
+ * Advanced ClientRouter example
+ * Shows usage with TypeScript, route parameters and query parameters
+ */
+const AdvancedExample: React.FC = () => {
+    const [currentParams, setCurrentParams] = useState<Record<string, string>>({});
+    const [currentQuery, setCurrentQuery] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+    // Example of subscribing to location changes to access parameters
+        return hashRouter.subscribe(() => {
+            setCurrentParams(hashRouter.currentEntry.value.getParams());
+            setCurrentQuery(hashRouter.currentEntry.value.getQuery());
+        });
+    }, []);
+
+    return (
+        <div className="app-container">
+            <h2>Advanced ClientRouter Example</h2>
+
+            <nav className="main-navigation">
+                <button onClick={() => hashRouter.navigate('home')}>Home</button>
+                <button onClick={() => hashRouter.navigate('about')}>About</button>
+                <button onClick={() => hashRouter.navigate('users/123?tab=settings')}>
+                    User 123
+                </button>
+                <button onClick={() =>
+                    hashRouter.navigate('products/electronics/laptop?color=silver')}
+                >
+                    Silver Laptop
+                </button>
+                {hashRouter.canGoBack.value && (
+                    <button onClick={() => hashRouter.goBack()}>
+                        Back
+                    </button>
+                )}
+            </nav>
+
+            <div className="debug-panel">
+                <h3>Current Route Information</h3>
+                <p>Hash: {hashRouter.getHash()}</p>
+                <p>Parameters: {JSON.stringify(currentParams)}</p>
+                <p>Query: {JSON.stringify(currentQuery)}</p>
+            </div>
+
+            <main className="content-area">
+                <ClientRouter
+                    router={hashRouter}
+                    routes={routes}
+                    homeUrl="home"
+                    notFoundComponent={NotFoundPage}
+                    className="router-content"
+                />
+            </main>
+        </div>
+    );
+};
+
+export default AdvancedExample;

@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "useDefineForClassFields": true,
+    "baseUrl": ".",
+    "paths": {
+      "@front-utils/router": [
+        "../../packages/router/src/index.ts"
+      ],
+      "@front-utils/e2e-mini-app-1": [
+        "../../packages/mini-app-1/src/index.tsx"
+      ],
+      "@front-utils/e2e-mini-app-2": [
+        "../../packages/mini-app-2/src/index.tsx"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "e2e/**/*",
+    "vite.config.ts",
+    "playwright.config.ts"
+  ]
+}
