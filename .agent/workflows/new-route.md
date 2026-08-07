@@ -4,12 +4,12 @@ description: Добавление нового маршрута в проект 
 
 Этот воркфлоу описывает шаги по добавлению нового маршрута.
 
-1. Открой файл конфигурации маршрутов (например, в `src/core/hashRouter.ts` или в примере).
-2. Обнови список `routeNames` в `InitializeRouterConfig`. Используй паттерны для параметров, например `users/:id`.
-3. Если маршрут требует новых данных, обнови типы в `src/types.ts`.
+1. Открой файл конфигурации маршрутов (например, в `packages/router/src/core/hashRouter.ts` или в мини-приложении `packages/mini-app-{1,2}/src/index.tsx`).
+2. Обнови список маршрутов в `InitializeRouterConfig`. Используй паттерны для параметров, например `users/:id`.
+3. Если маршрут требует новых данных, обнови типы в `packages/router/src/types.ts`.
 4. Если маршрут используется в React, обнови пропсы `ClientRouter` в соответствующем компоненте.
 5. Запусти валидацию:
 ```bash
 npm run validate
 ```
-6. Добавь тест на новый маршрут в `src/__tests__/hashRouter.spec.ts`.
+6. Добавь unit-тест на новый маршрут в `packages/router/src/__tests__/helpers.test.ts` (и при необходимости e2e-проверку в `apps/e2e/e2e/`).

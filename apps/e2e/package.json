@@ -1,0 +1,33 @@
+{
+  "name": "@front-utils/e2e-host",
+  "version": "0.0.0",
+  "private": true,
+  "description": "E2E host app: react-router v6 multi-page host embedding hash-router mini apps",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "check-lint": "eslint --max-warnings=0 --fix",
+    "check-types": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:server": "vite"
+  },
+  "dependencies": {
+    "@front-utils/e2e-mini-app-1": "*",
+    "@front-utils/e2e-mini-app-2": "*",
+    "@front-utils/router": "*",
+    "@preact/signals-react": "*",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^6.30.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.4.1",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.2"
+  }
+}

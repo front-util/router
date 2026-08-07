@@ -1,0 +1,26 @@
+{
+  "name": "@front-utils/example",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Interactive examples for @front-utils/router",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "check-lint": "eslint --max-warnings=0 --fix",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@front-utils/router": "*",
+    "@preact/signals-react": "*",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.4.1",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.2"
+  }
+}
