@@ -16,7 +16,7 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "useDefineForClassFields": true,
-    "baseUrl": ".",
+    "noUncheckedSideEffectImports": false,
     "paths": {
       "@front-utils/router": [
         "../../packages/router/src/index.ts"
