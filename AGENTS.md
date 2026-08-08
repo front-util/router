@@ -24,6 +24,7 @@ Pre-commit hook (simple-git-hooks + lint-staged) runs lint+types; pre-push runs 
 - `dist/` (rspack output) and `types/` (tsc declarations) are gitignored build output — never edit them.
 - `package.json` `exports` maps subpaths: `.`, `./hashRouter`, `./hashNavigation`, `./react`, `./types/*`. `src/index.ts` re-exports the same surface — keep them in sync when adding public files.
 - Publishing: `npm run pub` (build + `npm publish`); CI publishes on GitHub release.
+- `packages/router/README.md` is a mirror of the root `README.md` (npm shows the package-dir README). Keep them byte-identical — update both when editing the docs.
 
 ## Architecture
 
