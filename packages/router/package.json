@@ -1,11 +1,15 @@
 {
   "name": "@front-utils/router",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Client simple hash router with signals",
   "author": "IVGolubev",
   "license": "ISC",
   "type": "module",
   "types": "./types/index.d.ts",
+  "files": [
+    "dist",
+    "types"
+  ],
   "repository": {
     "type": "git",
     "url": "https://git@github.com:front-util/router.git"
