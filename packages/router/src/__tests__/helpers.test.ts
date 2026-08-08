@@ -240,6 +240,12 @@ describe('helpers/parseQueryParams', () => {
         expect(parseQueryParams('profile?flag&a=1')).toEqual({ flag: '', a: '1', });
     });
 
+    it('should decode "+" as a space in keys and values', () => {
+        expect(parseQueryParams('profile?q=hello+world')).toEqual({ q: 'hello world', });
+        expect(parseQueryParams('profile?a+b=1')).toEqual({ 'a b': '1', });
+        expect(parseQueryParams('profile?q=a%2Bb')).toEqual({ q: 'a+b', });
+    });
+
     it('should return empty object without query', () => {
         expect(parseQueryParams('profile')).toEqual({});
     });
@@ -316,6 +322,10 @@ describe('helpers/getParamsFromUrl', () => {
         expect(getParamsFromUrl('/users/:name', '/users/ivan%20petrov')).toEqual({
             name: 'ivan petrov',
         });
+    });
+
+    it('should keep "+" literal in path parameter values', () => {
+        expect(getParamsFromUrl('/users/:id', '/users/a+b')).toEqual({ id: 'a+b', });
     });
 
     it('should not throw on malformed percent-encoding', () => {

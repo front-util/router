@@ -244,11 +244,14 @@ export const createHashNavigation = (): HashNavigation => {
     // Public API methods
     const navigate = (hash: string, options: NavigationOptions = {}) => {
         // Create full URL by resolving against current location
-        const originalHash = currentEntry.value.hash;
         const fullUrl = new URL(`#${createHash(hash)}`, window.location.href).href;
+        const targetHash = getHash(fullUrl);
+        const originalHash = currentEntry.value.hash;
 
-        // Only navigate if the hash part actually changed
-        if(originalHash === hash) {
+        // Only navigate if the hash part actually changed, comparing the
+        // normalized (encoded) target against the stored hash so equivalent
+        // spellings of the same URL do not create duplicate history entries
+        if(originalHash === targetHash) {
             // If hash didn't change, check if state changed
             const currentEntryValue = currentEntry.value;
 

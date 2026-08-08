@@ -16,8 +16,24 @@ const safeDecodeURIComponent = (value: string): string => {
     }
 };
 
+const decodeQueryValue = (value: string): string => {
+    return safeDecodeURIComponent(value.replaceAll('+', ' '));
+};
+
 export const getHash = (url: string): string => {
-    const urlObject = new URL(url);
+    let urlObject: URL;
+
+    try {
+        urlObject = new URL(url);
+    }
+    catch{
+        try {
+            urlObject = new URL(url, window.location.href);
+        }
+        catch{
+            return '/';
+        }
+    }
 
     return urlObject.hash.replace(/^#\/?#?/, '') || '/';
 };
@@ -158,8 +174,8 @@ export const parseQueryParams = <T extends QueryParams = QueryParams>(urlPart: s
     for(const param of params) {
         const separatorIndex = param.indexOf('=');
         const hasSeparator = separatorIndex !== -1;
-        const key = safeDecodeURIComponent(hasSeparator ? param.slice(0, separatorIndex) : param);
-        const value = hasSeparator ? safeDecodeURIComponent(param.slice(separatorIndex + 1)) : '';
+        const key = decodeQueryValue(hasSeparator ? param.slice(0, separatorIndex) : param);
+        const value = hasSeparator ? decodeQueryValue(param.slice(separatorIndex + 1)) : '';
 
         queryParams[key] = value;
     }
