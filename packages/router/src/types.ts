@@ -81,7 +81,7 @@ export interface InitializeRouterConfig {
     routeNames: string[];
 }
 
-export type NavigationCb = (entry: NavigationHistoryEntry, prev: NavigationHistoryEntry | null, navigationStatus: 'success' | 'notfound') => void;
+export type NavigationCb = (entry: NavigationHistoryEntry, prev: NavigationHistoryEntry | null, navigationStatus: 'success' | 'notfound' | 'notStarted') => void;
 
 export interface SubscribeChangeConfig {
     onChange: NavigationCb;
