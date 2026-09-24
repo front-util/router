@@ -23,6 +23,13 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
     let routerConfig: InitializeRouterConfig | null = null;
     let subscription: VoidFunction | null = null;
 
+    // Statuses last delivered to standalone subscribers created via
+    // subscribe(), keyed by the exact history entry they refer to. create()
+    // re-emits an accurate status once the router config is applied, so a
+    // subscriber attached before any create() transitions from notStarted even
+    // when the current entry itself does not change (valid deep-link launch).
+    const standaloneDeliveries = new Map<NavigationCb, { status: string; entry: NavigationHistoryEntry; }>();
+
     /**
      * Checks if a hash exists in the configured route names
      * @param hash - The hash to check
@@ -38,7 +45,16 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
         return !!pattern;
     };
 
-    const getNavigationStatus = (hash: string) => isPageExists(hash) ? 'success' : 'notfound';
+    const getNavigationStatus = (hash: string) => {
+        // Without a configured route set the router does not know yet whether
+        // a hash exists, so the router is "not started". Standalone
+        // subscribers receive this status on their initial synchronous call,
+        // which often fires before any create()/ClientRouter run, and are
+        // re-emitted with an accurate status once create() sets the config.
+        if(!routerConfig) return 'notStarted';
+
+        return isPageExists(hash) ? 'success' : 'notfound';
+    };
 
     /**
      * Helper function to subscribe to navigation events
@@ -52,6 +68,29 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
         // Use the new subscribe method instead of events
         return hashNavigation.subscribe((entry, prevEntry, hash) => {
             callback(entry, prevEntry, getNavigationStatus(hash));
+        });
+    };
+
+    /**
+     * Re-emits the current navigation status to standalone subscribers whose
+     * delivered status is stale for the still-current entry (e.g. notStarted
+     * before the first config was applied). Both the status AND the entry must
+     * match the last delivery to avoid duplicates: when the redirect changed
+     * the entry, the normal hashNavigation effect already delivers the fresh
+     * status, so the refresh must stay silent.
+     */
+    const refreshStandaloneStatuses = (): void => {
+        const entry = hashNavigation.currentEntry.value;
+
+        if(!entry) return;
+
+        const status = getNavigationStatus(entry.hash);
+
+        standaloneDeliveries.forEach((delivered, callback) => {
+            if(delivered.entry !== entry || delivered.status === status) return;
+
+            standaloneDeliveries.set(callback, { status, entry: entry, });
+            callback(entry, hashNavigation.prevEntry.value, status);
         });
     };
 
@@ -119,6 +158,12 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
 
         subscription = unsubscribe;
 
+        // The config is applied: standalone subscribers that attached before
+        // the router started (status notStarted) now get an accurate status
+        // for the current entry, even when no navigation happened (valid
+        // deep-link first launch does not change the entry).
+        refreshStandaloneStatuses();
+
         return unsubscribe;
     };
 
@@ -128,7 +173,19 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
      * @returns A function to unsubscribe the listener
      */
     const subscribe = (callback: NavigationCb): VoidFunction => {
-        return subscribeToNavigationEvents(callback);
+        // Record the last delivered status+entry per subscriber so
+        // refreshStandaloneStatuses() can detect staleness after create()
+        const wrapped: NavigationCb = (entry, prevEntry, navigationStatus) => {
+            standaloneDeliveries.set(callback, { status: navigationStatus, entry, });
+            callback(entry, prevEntry, navigationStatus);
+        };
+
+        const unsubscribe = subscribeToNavigationEvents(wrapped);
+
+        return () => {
+            standaloneDeliveries.delete(callback);
+            unsubscribe();
+        };
     };
 
     /**
@@ -185,6 +242,9 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
             subscription();
             subscription = null;
         }
+        // Release standalone subscriber bookkeeping so the router config
+        // references are not retained after teardown
+        standaloneDeliveries.clear();
         hashNavigation.destroy();
     };
 
