@@ -27,6 +27,7 @@ A lightweight, flexible hash-based router implementation for modern web applicat
     - [Basic Setup](#basic-setup)
     - [Advanced Usage](#advanced-usage)
     - [Handling Route Changes](#handling-route-changes)
+    - [Handling First Launch and Navigation Statuses](#handling-first-launch-and-navigation-statuses)
     - [State Management](#state-management)
     - [Route Parameters and Queries](#route-parameters-and-queries)
     - [TypeScript Usage](#typescript-usage)
@@ -85,6 +86,7 @@ HashNavigation provides direct access to browser history and navigation function
 #### Properties
 
 - `currentEntry` - A read-only signal containing the current history entry
+- `prevEntry` - A read-only signal containing the previous history entry
 - `entries` - A read-only signal containing all history entries
 - `canGoBack` - A read-only signal indicating if navigation backward is possible
 - `canGoForward` - A read-only signal indicating if navigation forward is possible
@@ -94,6 +96,7 @@ HashNavigation provides direct access to browser history and navigation function
 - `navigate(hash, options)` - Navigate to a new hash, optionally with state
 - `traverseTo(key, options)` - Navigate to a specific history entry by key
 - `back(options)` - Navigate backward in history
+- `goToPrev()` - Alias for `back`, navigating to the previous entry
 - `forward(options)` - Navigate forward in history
 - `updateCurrentEntry(options, hash)` - Update the state of the current entry, optionally updating the hash
 - `updateCurrentEntryHash(hash, newState?: NavigationState | null | undefined)` - Update hash and state of the current entry
@@ -118,7 +121,7 @@ HashRouter provides a higher-level API for common routing operations, with easie
 #### Methods
 
 - `create(config)` - Initialize the router and subscribe to location changes
-- `subscribe(callback)` - Subscribe to history changes
+- `subscribe(callback)` - Subscribe to route changes; the callback receives the current entry, the previous entry, and the `navigationStatus` (`'success' | 'notfound' | 'notStarted'`)
 - `navigate(hash, state)` - Navigate to a specific hash with optional state
 - `navigateTo(pattern, params?, state?)` - Navigate to a route pattern, substituting params into the URL, e.g. `router.navigateTo('/user/:category/:id', { category: 5, id: 10 })` navigates to `/user/5/10`
 - `replaceState(config)` - Replace the current state and/or hash
@@ -285,6 +288,47 @@ document.getElementById('contact-btn').addEventListener('click', () => {
 
 document.getElementById('back-btn').addEventListener('click', () => {
   hashRouter.goBack();
+});
+```
+
+### Handling First Launch and Navigation Statuses
+
+The callback passed to `subscribe()` and `create().onChange` receives a third argument — `navigationStatus`, describing the delivery for the current entry. Use it to avoid rendering a "not found" screen during the very first synchronous delivery, when the router config has not been applied yet:
+
+```typescript
+import { hashRouter } from '@front-utils/router';
+
+// A module-scope subscription runs immediately during script evaluation. The
+// first delivery reports navigationStatus === 'notStarted' because no
+// create() has run yet — this must not be treated as a routing error.
+hashRouter.subscribe((entry, prevEntry, navigationStatus) => {
+  if(navigationStatus === 'notStarted') {
+    console.log('Router is initializing — entry:', entry.hash, '| previous:', prevEntry?.hash);
+    return; // the next delivery (after create()) carries an accurate status
+  }
+
+  if(navigationStatus === 'success') {
+    console.log('Route found:', entry.hash);
+    renderPage(entry);
+    return;
+  }
+
+  // navigationStatus === 'notfound'
+  console.log('No route matches:', entry.hash);
+  renderNotFound();
+});
+
+// Applying the config re-emits an accurate status for the still-current entry,
+// so the leading notStarted delivery is followed by success (valid deep link)
+// or notfound (unknown route) without any navigation having happened.
+hashRouter.create({
+  onChange: () => {
+    // Rendering is handled by the standalone subscribe() above
+  },
+  config: {
+    homeUrl: 'home',
+    routeNames: ['home', 'users/:id']
+  }
 });
 ```
 
@@ -854,6 +898,16 @@ export default {
 
 Hashes passed to `navigate()`, `updateCurrentEntryHash()` and `homeUrl` are normalized: leading `#`/`/` and trailing `/` are stripped, so `'/home'`, `'#/home'`, `'home/'` and `'home'` are equivalent and always produce `#/home`.
 
+### Subscription navigation statuses
+
+Callbacks passed to `create().onChange` and `subscribe()` receive a third argument, `navigationStatus`, describing the delivery for the current entry:
+
+- `notStarted` - the router config has not been applied yet (no `create()` ran, or the subscriber attached before it). The router cannot judge whether the hash exists, and this is the status delivered on the initial synchronous call. Router API methods (`getHash()`, `hasPage()`, `getState()`, ...) remain safe to call.
+- `success` - the current hash matches a configured route.
+- `notfound` - no configured route matches the current hash.
+
+When a subscriber attaches before the first `create()`, applying the config re-emits an accurate status for the same entry (e.g. `notStarted` -> `success` for a valid deep link) without emitting extra events while the entry changes.
+
 ### Route matching
 
 - Route patterns are matched **first match wins** — declare more specific routes (e.g. `users/me`) before parameterized ones (`users/:id`).
@@ -874,17 +928,19 @@ The library is built on the following TypeScript interfaces:
 export interface HashNavigation {
   // Public signals
   currentEntry: ReadonlySignal<NavigationHistoryEntry>;
+  prevEntry: ReadonlySignal<NavigationHistoryEntry | null>;
   entries: ReadonlySignal<NavigationHistoryEntry[]>;
   canGoBack: ReadonlySignal<boolean>;
   canGoForward: ReadonlySignal<boolean>;
-  
+
   // Navigation methods
-  navigate: (hash: string, options?: NavigationOptions) => NavigationResult;
-  traverseTo: (key: string, options?: NavigationOptions) => NavigationResult | null;
-  back: (options?: NavigationOptions) => NavigationResult | null;
-  forward: (options?: NavigationOptions) => NavigationResult | null;
-  updateCurrentEntry: (options?: NavigationOptions) => void;
-  
+  navigate: (hash: string, options?: NavigationOptions) => void;
+  traverseTo: (key: string, options?: NavigationOptions) => void;
+  back: VoidFunction;
+  goToPrev: VoidFunction;
+  forward: VoidFunction;
+  updateCurrentEntry: (options?: NavigationOptions, hash?: string) => void;
+
   // Subscription method
   subscribe: (
     callback: (
@@ -893,13 +949,13 @@ export interface HashNavigation {
       hash: string
     ) => void
   ) => VoidFunction;
-  
+
   // Init
   create: () => void;
   // Cleanup
   destroy: () => void;
 
-  updateCurrentEntryHash: (hash: string, newState?: NavigationState | null | undefined) => void;
+  updateCurrentEntryHash: (hash: string, newState?: NavigationState | null) => void;
 }
 ```
 
@@ -909,16 +965,18 @@ export interface HashNavigation {
 export interface HashRouter extends Pick<HashNavigation, 'entries' | 'canGoBack' | 'canGoForward'> {
   _navigation: HashNavigation;
   currentEntry: ReadonlySignal<RouterHistoryEntry>;
+  prevEntry: ReadonlySignal<NavigationHistoryEntry | null>;
   state: ReadonlySignal<NavigationState>;
   hash: ReadonlySignal<string>;
   create: (config: SubscribeChangeConfig) => VoidFunction;
-  subscribe: (callback: (update: NavigationHistoryEntry, prevLocation?: NavigationHistoryEntry | null) => void) => VoidFunction;
-  navigate: (hash: string, state?: Record<string, unknown>) => NavigationResult;
-  replaceState: (config?: {state?: Record<string, unknown>; hash?: string;}) => void;
+  subscribe: (callback: NavigationCb) => VoidFunction;
+  navigate: (hash: string, state?: Record<string, unknown>) => void;
+  navigateTo: (pattern: string, params?: Record<string, string | number>, state?: Record<string, unknown>) => void;
+  replaceState: (config?: { state?: Record<string, unknown>; hash?: string; }) => void;
   goBack: VoidFunction;
   goToPrev: VoidFunction;
   getHash: () => string;
-  getState: () => NavigationState | undefined;
+  getState: <T = NavigationState>() => T | undefined;
   hasPage: (hash?: string) => boolean;
   destroy: VoidFunction;
   getConfig: () => InitializeRouterConfig | null;
@@ -938,13 +996,19 @@ export interface RouterHistoryEntry extends NavigationHistoryEntry {
 ### Configuration Interfaces
 
 ```typescript
+export type NavigationCb = (
+  entry: NavigationHistoryEntry,
+  prev: NavigationHistoryEntry | null,
+  navigationStatus: 'success' | 'notfound' | 'notStarted'
+) => void;
+
 export interface InitializeRouterConfig {
   homeUrl: string;
   routeNames: string[];
 }
 
 export interface SubscribeChangeConfig {
-  onChange: (loc: NavigationHistoryEntry) => void;
+  onChange: NavigationCb;
   config: InitializeRouterConfig;
 }
 ```
@@ -1010,4 +1074,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-CI diagnostic run.
