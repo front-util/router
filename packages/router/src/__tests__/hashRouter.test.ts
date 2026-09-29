@@ -11,6 +11,80 @@ const loadAt = (hash: string) => {
     window.location.hash = `#/${hash.replace(/^\/+/, '')}`;
 };
 
+describe('hashRouter/currentEntry params', () => {
+    it('resolves params for a deep link read before the config was applied', () => {
+        loadAt('profile/1001');
+        const nav = createHashNavigation();
+        const router = createHashRouter(nav);
+
+        // A consumer that renders before the router starts (a debug panel, a
+        // header, a page reading the router directly) reads the entry while no
+        // config is applied yet
+        expect(router.currentEntry.value.pattern).toBeUndefined();
+        expect(router.currentEntry.value.getParams()).toEqual({});
+
+        router.create({
+            config  : { homeUrl: 'home', routeNames: ['home', 'profile/:id'], },
+            onChange: () => {},
+        });
+
+        expect(router.getHash()).toBe('profile/1001');
+        expect(router.currentEntry.value.pattern).toBe('profile/:id');
+        expect(router.currentEntry.value.getParams()).toEqual({ id: '1001', });
+    });
+
+    it('resolves params for a deep link mounted on a pattern with a leading slash', () => {
+        loadAt('profile/1001');
+        const nav = createHashNavigation();
+        const router = createHashRouter(nav);
+
+        router.create({
+            config  : { homeUrl: '/home', routeNames: ['/home', '/profile/:id'], },
+            onChange: () => {},
+        });
+
+        expect(router.getHash()).toBe('profile/1001');
+        expect(router.hasPage()).toBe(true);
+        expect(router.currentEntry.value.getParams()).toEqual({ id: '1001', });
+    });
+
+    it('re-resolves the pattern when a repeated create swaps the route group', () => {
+        loadAt('users/42');
+        const nav = createHashNavigation();
+        const router = createHashRouter(nav);
+
+        router.create({
+            config  : { homeUrl: 'home', routeNames: ['home', 'users/:id'], },
+            onChange: () => {},
+        });
+        expect(router.currentEntry.value.pattern).toBe('users/:id');
+
+        // Same entry, a broader route group: only the config can update the pattern
+        router.create({
+            config  : { homeUrl: 'home', routeNames: ['home', 'users/:userId', 'users/:id'], },
+            onChange: () => {},
+        });
+
+        expect(router.getHash()).toBe('users/42');
+        expect(router.currentEntry.value.pattern).toBe('users/:userId');
+        expect(router.currentEntry.value.getParams()).toEqual({ userId: '42', });
+    });
+
+    it('keeps params when the query string contains a slash', () => {
+        loadAt('profile/1001?redirect=/home');
+        const nav = createHashNavigation();
+        const router = createHashRouter(nav);
+
+        router.create({
+            config  : { homeUrl: 'home', routeNames: ['home', 'profile/:id'], },
+            onChange: () => {},
+        });
+
+        expect(router.currentEntry.value.getParams()).toEqual({ id: '1001', });
+        expect(router.currentEntry.value.getQuery()).toEqual({ redirect: '/home', });
+    });
+});
+
 describe('hashRouter/subscribe navigation status', () => {
     it('reports notStarted before the config is applied and success afterwards', () => {
         loadAt('about');

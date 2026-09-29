@@ -158,6 +158,19 @@ describe('helpers/isRouteMatch', () => {
         expect(isRouteMatch('/dashboard', '/dashboard#query1=test')).toBe(false);
     });
 
+    it('should match regardless of leading/trailing slashes on either side', () => {
+        expect(isRouteMatch('/profile/:id', 'profile/1001')).toBe(true);
+        expect(isRouteMatch('profile/:id', '/profile/1001')).toBe(true);
+        expect(isRouteMatch('profile/:id', 'profile/1001/')).toBe(true);
+        expect(isRouteMatch('/users/:id', 'users/123')).toBe(true);
+    });
+
+    it('should keep rejecting hashes with mismatching segments after normalization', () => {
+        expect(isRouteMatch('/profile/:id', 'profile/1001/settings')).toBe(false);
+        expect(isRouteMatch('/profile/:id', 'other/1001')).toBe(false);
+        expect(isRouteMatch('users/:id', 'users')).toBe(false);
+    });
+
     it('should escape regex special characters in static segments', () => {
         expect(isRouteMatch('v1.list/:id', 'v1.list/1')).toBe(true);
         expect(isRouteMatch('v1.list/:id', 'v1Xlist/1')).toBe(false);
@@ -313,6 +326,17 @@ describe('helpers/getParamsFromUrl', () => {
         expect(getParamsFromUrl('/categories/:name', '/categories/electronics?testQuery=test')).toEqual({
             name: 'electronics',
         });
+    });
+
+    it('should extract params when pattern and hash use different slash styles', () => {
+        expect(getParamsFromUrl('users/:id', 'users/123')).toEqual({ id: '123', });
+        expect(getParamsFromUrl('/users/:id', 'users/123')).toEqual({ id: '123', });
+        expect(getParamsFromUrl('/users/:id', 'users/123/')).toEqual({ id: '123', });
+    });
+
+    it('should extract params when the query string contains a slash', () => {
+        expect(getParamsFromUrl('/users/:id', '/users/123?redirect=/home')).toEqual({ id: '123', });
+        expect(getParamsFromUrl('users/:id', 'users/123?redirect=/home&tab=info')).toEqual({ id: '123', });
     });
 
     it('should decode parameter values', () => {

@@ -1,4 +1,4 @@
-import { computed } from '@preact/signals';
+import { computed, signal } from '@preact/signals';
 
 import { getParamsFromUrl, getRouteItem, getRouteMap, getUrlFromPattern, parseQueryParams } from '../helpers';
 import {
@@ -19,8 +19,13 @@ import { createHashNavigation } from './hashNavigation';
  * @returns An object implementing the HashRouter interface
  */
 export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => {
-    // Store the router configuration
-    let routerConfig: InitializeRouterConfig | null = null;
+    // Store the router configuration in a signal: the currentEntry computed
+    // below resolves the route pattern from it, and consumers may read
+    // currentEntry during the very first render pass, i.e. before create() has
+    // applied any config. A plain variable would not invalidate the computed on
+    // create(), leaving pattern/getParams() empty for the whole session on a
+    // deep link, where the entry itself never changes.
+    const routerConfig = signal<InitializeRouterConfig | null>(null);
     let subscription: VoidFunction | null = null;
 
     // Statuses last delivered to standalone subscribers created via
@@ -36,11 +41,13 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
      * @returns boolean indicating if the hash exists in routes
      */
     const isPageExists = (hash: string): boolean => {
-        if(!routerConfig) return false;
+        const config = routerConfig.value;
+
+        if(!config) return false;
 
         // Remove the leading '#' if present for comparison
         const normalizedHash = hash.startsWith('#') ? hash.substring(1) : hash;
-        const pattern = getRouteItem(getRouteMap(routerConfig?.routeNames ?? []), normalizedHash);
+        const pattern = getRouteItem(getRouteMap(config.routeNames), normalizedHash);
 
         return !!pattern;
     };
@@ -51,7 +58,7 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
         // subscribers receive this status on their initial synchronous call,
         // which often fires before any create()/ClientRouter run, and are
         // re-emitted with an accurate status once create() sets the config.
-        if(!routerConfig) return 'notStarted';
+        if(!routerConfig.value) return 'notStarted';
 
         return isPageExists(hash) ? 'success' : 'notfound';
     };
@@ -121,8 +128,11 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
     const create = (config: SubscribeChangeConfig): VoidFunction => {
         const { onChange, config: initConfig, } = config;
 
-        // Store the configuration for future use
-        routerConfig = initConfig;
+        // Store the configuration for future use. Writing the signal before
+        // anything else invalidates the currentEntry computed, so consumers
+        // that already read it during an earlier render pass get the route
+        // pattern resolved once create() returns.
+        routerConfig.value = initConfig;
 
         // Cancel any previous subscription so a repeated create without
         // destroy does not duplicate onChange calls
@@ -248,12 +258,15 @@ export const createHashRouter = (hashNavigation: HashNavigation): HashRouter => 
         hashNavigation.destroy();
     };
 
-    const getConfig = () => routerConfig;
+    const getConfig = () => routerConfig.value;
 
     const currentEntry = computed(() => {
         const entry = hashNavigation.currentEntry.value;
         const hash = entry.hash;
-        const pattern = getRouteItem(getRouteMap(routerConfig?.routeNames ?? []), hash);
+        // Reading the config signal (not a plain variable) keeps the computed
+        // subscribed to it, so create() re-resolves pattern for the current
+        // entry even when the hash never changes (deep link / route swap)
+        const pattern = getRouteItem(getRouteMap(routerConfig.value?.routeNames ?? []), hash);
 
         return {
             ...entry,
