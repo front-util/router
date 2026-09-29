@@ -3,6 +3,7 @@ import { Link, Route, Routes } from 'react-router-dom';
 
 import { App1Page } from './pages/App1Page';
 import { App2Page } from './pages/App2Page';
+import { DeepLinkPage } from './pages/DeepLinkPage';
 import { DualPage } from './pages/DualPage';
 import { HomePage } from './pages/HomePage';
 import { NotFoundHostPage } from './pages/NotFoundHostPage';
@@ -23,6 +24,7 @@ export const App: React.FC = () => {
                     <Link to="/app1" data-testid="link-app1">App 1</Link>
                     <Link to="/app2" data-testid="link-app2">App 2</Link>
                     <Link to="/dual" data-testid="link-dual">Dual</Link>
+                    <Link to="/deep-link" data-testid="link-deep-link">Deep Link</Link>
                 </nav>
                 <button
                     className="auth-toggle"
@@ -45,6 +47,7 @@ export const App: React.FC = () => {
                     <Route path="/app1" element={<App1Page isAuthorized={isAuthorized} />} />
                     <Route path="/app2" element={<App2Page isAuthorized={isAuthorized} />} />
                     <Route path="/dual" element={<DualPage isAuthorized={isAuthorized} />} />
+                    <Route path="/deep-link" element={<DeepLinkPage />} />
                     <Route path="*" element={<NotFoundHostPage />} />
                 </Routes>
             </main>

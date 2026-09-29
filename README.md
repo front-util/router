@@ -911,6 +911,7 @@ When a subscriber attaches before the first `create()`, applying the config re-e
 ### Route matching
 
 - Route patterns are matched **first match wins** — declare more specific routes (e.g. `users/me`) before parameterized ones (`users/:id`).
+- Patterns and hashes are normalized before matching: the query string is dropped and leading/trailing slashes are stripped from both sides, so `/users/:id` and `users/:id` are equivalent. The hash exposed by the router never carries a leading slash.
 - Regex special characters in static segments are escaped, so a dot in `v1.list/:id` matches a literal dot.
 - Route parameter values and query keys/values are URL-decoded; values may contain `=` (only the first `=` is treated as a separator).
 
@@ -1066,6 +1067,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 **Route parameters not working**
 - Ensure your route patterns are correctly defined in the `routeNames` array
 - Check that you're accessing parameters with `getParams()` method from the router entry
+- `getParams()` resolves against the config applied by `create()`, so it returns `{}` until the router has been created — this matters when a component reads `currentEntry` during its first render, before `create()` runs in an effect
+- A `pattern`-less `currentEntry` (no route matched) always yields `{}` — check `hasPage()` and that the pattern you registered is reachable from the current hash
 
 **Conflicts with other routers**
 - This router uses hash-based navigation, so avoid using other hash-change listeners

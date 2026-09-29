@@ -64,15 +64,33 @@ export const createHistoryEntry = (
     };
 };
 
+/**
+ * Strips the query string and the surrounding slashes from a route path, so
+ * '/users/123?tab=info', 'users/123' and '/users/123/' all normalize to
+ * 'users/123'. The hash the router produces never carries a leading slash
+ * (see getHash), while patterns are commonly written with one, so both sides
+ * must be normalized before they are compared or split into segments.
+ */
+const normalizeRoutePath = (routePath: string): string => {
+    const withoutQuery = routePath.split('?', 1)[0];
+    const trimmedStart = withoutQuery.startsWith('/') ? withoutQuery.slice(1) : withoutQuery;
+    const normalized = trimmedStart.endsWith('/') ? trimmedStart.slice(0, -1) : trimmedStart;
+
+    return normalized;
+};
+
 export const isRouteMatch = (pattern: string, hash: string | null | undefined) => {
     // Handle null or undefined hash
     if(hash === null || hash === undefined) {
         return false;
     }
 
+    // Normalize both sides so the slash style of the pattern does not matter
+    const normalizedPattern = normalizeRoutePath(pattern);
+    const normilizedHash = normalizeRoutePath(hash);
+
     // Split the pattern and URL into segments to ensure they have the same length
-    const patternSegments = pattern.split('/');
-    const normilizedHash = hash.split('?', 1)[0];
+    const patternSegments = normalizedPattern.split('/');
     const hashSegments = normilizedHash.split('/');
 
     // If the segments don't match in length, return false
@@ -82,7 +100,7 @@ export const isRouteMatch = (pattern: string, hash: string | null | undefined) =
 
     // Replace route parameters with a placeholder, escape regex special
     // characters in static segments, then restore the parameter matcher
-    const patternRegex = pattern
+    const patternRegex = normalizedPattern
         .replaceAll(/:\w+/g, '@@PARAM@@')
         .replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
         .replaceAll('@@PARAM@@', '([^/]+)');
@@ -130,9 +148,11 @@ export const getUrlFromPattern = (
 export const getParamsFromUrl = (pattern: string, hash: string): Record<string, string> => {
     const params: Record<string, string> = {};
 
-    // Split the pattern and URL into segments
-    const patternSegments = pattern.split('/');
-    const urlSegments = hash.split('/');
+    // Normalize both sides exactly like isRouteMatch does, otherwise a
+    // mismatching segment count silently drops every param. A query string
+    // containing a slash ('?redirect=/home') must not add extra segments.
+    const patternSegments = normalizeRoutePath(pattern).split('/');
+    const urlSegments = normalizeRoutePath(hash).split('/');
 
     // If the segments don't match in length, return empty params
     if(patternSegments.length !== urlSegments.length) {
@@ -150,11 +170,9 @@ export const getParamsFromUrl = (pattern: string, hash: string): Record<string, 
         const paramName = patternSegment.substring(1);
         // Get the corresponding value from the URL
         const paramValue = urlSegments[i];
-        // Remove query
-        const normalizedValue = paramValue.split('?', 1)[0];
 
         // Add to the params object
-        params[paramName] = safeDecodeURIComponent(normalizedValue);
+        params[paramName] = safeDecodeURIComponent(paramValue);
     }
 
     return params;
