@@ -2,6 +2,10 @@ name: Publish Package to npmjs
 on:
   release:
     types: [published]
+permissions:
+  contents: read
+  # required by --provenance: Sigstore signing needs GitHub OIDC tokens
+  id-token: write
 jobs:
   build:
     runs-on: ubuntu-latest
