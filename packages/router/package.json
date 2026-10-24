@@ -44,10 +44,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build": "rm -rf dist && rm -rf types && npm run build:types && npm run build:rspack",
+    "build": "rm -rf dist && rm -rf types && npm run build:types && npm run build:rspack && npm run sync-readme",
     "build:rspack": "rspack build",
     "build:types": "tsc --p tsconfig.build.json",
-    "pub": "npm run build && npm publish --access public"
+    "pub": "npm run build && npm publish --access public",
+    "sync-readme": "node scripts/sync-readme.mjs",
+    "prepublishOnly": "npm run sync-readme"
   },
   "browserslist": [
     "chrome > 83",
