@@ -14,10 +14,21 @@ import {
 } from '../helpers';
 
 const createInitialState = () => ({
-    entries      : [createHistoryEntry(window.location.href)],
+    // The browser restores history.state for the current entry on a page
+    // reload, so the model must be seeded from it instead of starting empty
+    entries      : [createHistoryEntry(window.location.href, (window.history.state as NavigationState | null) ?? {})],
     index        : 0,
     subscriptions: new Set<VoidFunction>(),
 });
+
+/**
+ * An explicit null clears the state, while undefined means "the caller did
+ * not specify a new state": the native one must be kept, passing undefined
+ * to replaceState would wipe it
+ */
+const resolveStateForHistory = (newState: NavigationState | null | undefined): NavigationState | null => {
+    return newState === undefined ? (window.history.state as NavigationState | null) : newState;
+};
 
 /**
  * Implementation of hash-based router core using Preact signals
@@ -50,6 +61,7 @@ export const createHashNavigation = (): HashNavigation => {
     const reconcileFromLocation = (): void => {
         const currentUrl = window.location.href;
         const existingEntryIndex = _entries.value.findIndex((entry) => entry.url === currentUrl);
+        const historyState = (window.history.state as NavigationState | null) ?? {};
 
         // Using batch to update multiple signals at once
         batch(() => {
@@ -61,14 +73,29 @@ export const createHashNavigation = (): HashNavigation => {
                     newEntries.splice(_currentIndex.value + 1);
                 }
 
-                const state = window.history.state as NavigationState | undefined;
-                const newEntry = createHistoryEntry(currentUrl, state, newEntries.length);
+                const newEntry = createHistoryEntry(currentUrl, historyState, newEntries.length);
 
                 newEntries.push(newEntry);
                 _entries.value = newEntries;
                 _currentIndex.value = newEntries.length - 1;
             }
             else {
+                // The location is already known, but its native state may have
+                // changed while the router was not listening (a reload, a host
+                // pushState): keep the model entry in sync so currentEntry
+                // does not expose an empty state after a page reload
+                const existingEntry = _entries.value[existingEntryIndex];
+
+                if(JSON.stringify(existingEntry.state) !== JSON.stringify(historyState)) {
+                    const updatedEntries = [..._entries.value];
+
+                    updatedEntries[existingEntryIndex] = {
+                        ...existingEntry,
+                        state: historyState,
+                    };
+                    _entries.value = updatedEntries;
+                }
+
                 // Reconcile with the preserved model so back/forward across
                 // router lifecycles keeps the correct history position
                 _currentIndex.value = existingEntryIndex;
@@ -165,8 +192,11 @@ export const createHashNavigation = (): HashNavigation => {
         newState: NavigationState | null | undefined,
         entryIndex: number = _currentIndex.value
     ): NavigationHistoryEntry => {
-        window.history.replaceState(newState, '', fullUrl);
-        return updateEntryState(entryIndex, newState);
+        const state = resolveStateForHistory(newState);
+
+        window.history.replaceState(state, '', fullUrl);
+
+        return updateEntryState(entryIndex, state);
     };
 
     const updateCurrentEntry = (options: NavigationOptions = {}): void => {
@@ -176,15 +206,14 @@ export const createHashNavigation = (): HashNavigation => {
     // Handle entry hash updates
     const updateCurrentEntryHash = (hash: string, newState?: NavigationState | null) => {
         const newUrl = new URL(`#${createHash(hash)}`, window.location.href).href;
+        const state = resolveStateForHistory(newState);
 
-        window.history.replaceState(newState, '', newUrl);
+        window.history.replaceState(state, '', newUrl);
 
         return setEntry(_currentIndex.value, {
             url : newUrl,
             hash: getHash(newUrl),
-            ...newState && {
-                state: newState,
-            },
+            state,
         });
     };
 
