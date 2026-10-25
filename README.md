@@ -33,6 +33,7 @@ A lightweight, flexible hash-based router implementation for modern web applicat
     - [TypeScript Usage](#typescript-usage)
     - [Integration with Frameworks](#integration-with-frameworks)
       - [React Integration](#react-integration)
+      - [Signals in React](#signals-in-react)
       - [Using ClientRouter Component](#using-clientrouter-component)
       - [Vue Integration](#vue-integration)
   - [Contract Interfaces](#contract-interfaces)
@@ -81,7 +82,7 @@ For older browsers, consider using a polyfill for the History API.
 
 HashNavigation provides direct access to browser history and navigation functionality. It's designed as a lightweight wrapper around the browser's History API.
 
-> It almost completely implements the native object **window.navigation**
+> It follows the entry model of the native Navigation API (`window.navigation`): `currentEntry`, `prevEntry`, `entries` and entry traversal. The promise-based parts of that API (commit lifecycle, `intercept()`, `scroll()`) are intentionally out of scope — this library runs on `window.history` + the hash for universal browser support.
 
 #### Properties
 
@@ -95,9 +96,9 @@ HashNavigation provides direct access to browser history and navigation function
 
 - `navigate(hash, options)` - Navigate to a new hash, optionally with state
 - `traverseTo(key, options)` - Navigate to a specific history entry by key
-- `back(options)` - Navigate backward in history
-- `goToPrev()` - Alias for `back`, navigating to the previous entry
-- `forward(options)` - Navigate forward in history
+- `back()` - Navigate backward in history
+- `goToPrev()` - Navigate to the previous history entry (uses `traverseTo`, falls back to `history.back()`)
+- `forward()` - Navigate forward in history
 - `updateCurrentEntry(options, hash)` - Update the state of the current entry, optionally updating the hash
 - `updateCurrentEntryHash(hash, newState?: NavigationState | null | undefined)` - Update hash and state of the current entry
 - `create()` - Initialize the navigation system
@@ -126,7 +127,7 @@ HashRouter provides a higher-level API for common routing operations, with easie
 - `navigateTo(pattern, params?, state?)` - Navigate to a route pattern, substituting params into the URL, e.g. `router.navigateTo('/user/:category/:id', { category: 5, id: 10 })` navigates to `/user/5/10`
 - `replaceState(config)` - Replace the current state and/or hash
 - `goBack()` - Navigate back in history
-- `goToPrev()` - Alias for goBack
+- `goToPrev()` - Navigate to the previous entry from the router model (`traverseTo`), falls back to `history.back()`
 - `getHash()` - Get the current hash
 - `getState()` - Get the current state
 - `hasPage(hash?)` - Check if a page exists in configured routes
@@ -154,9 +155,9 @@ ClientRouter is a React component that provides a declarative way to define and 
 #### Props
 
 - `router`: *(HashRouter)* - An instance of HashRouter to use for navigation
-- `routes`: *(Map<string, React.ComponentType<any>>)* - A Map of route patterns to React components
+- `routes`: *(Record<string, React.ComponentType>)* - Route patterns mapped to React components. Leading slashes in patterns are optional (`'users/:userId'` and `'/users/:userId'` are equivalent)
 - `homeUrl`: *(string)* - The default route to redirect to when no route matches
-- `notFoundComponent`: *(React.ComponentType<any>)* - Component to render when no route matches
+- `notFoundComponent`: *(React.ComponentType)* - Component to render when no route matches
 - `className`: *(string, optional)* - CSS class to apply to the router container element
 
 #### Usage
@@ -169,6 +170,8 @@ The ClientRouter simplifies route management in React applications by:
 4. Handling "not found" routes with a custom component
 5. Cleaning up subscriptions when unmounted
 
+Internally it reads signals through `useSignals()` (`@preact/signals-react/runtime`) and a local `useSignal`, so it re-renders on every route change without any manual `setState` — see [Signals in React](#signals-in-react).
+
 ## Usage Examples
 
 ### Basic Setup
@@ -176,7 +179,10 @@ The ClientRouter simplifies route management in React applications by:
 ```typescript
 import { hashRouter } from '@front-utils/router';
 
-// Initialize the router with routes configuration
+// Initialize the router with routes configuration.
+// Call create() once on the app bootstrap: create()/destroy() are
+// ref-counted, so nested or repeated create() without destroy() keeps one
+// shared history model and listener.
 const unsubscribe = hashRouter.create({
   onChange: (location) => {
     console.log('Route changed:', location.hash);
@@ -191,7 +197,7 @@ const unsubscribe = hashRouter.create({
 // Navigate to a different route
 hashRouter.navigate('about');
 
-// Clean up when your app is destroyed
+// Clean up when the app is torn down (ClientRouter does it for you)
 // unsubscribe();
 ```
 
@@ -247,19 +253,20 @@ const handleRouteChange = (location) => {
   const hash = location.hash;
   const appContainer = document.getElementById('app');
   
-  // Simple route-based content rendering
+  // Simple route-based content rendering (textContent — never build DOM
+  // from untrusted strings via innerHTML)
   switch (hash) {
     case 'home':
-      appContainer.innerHTML = '<h1>Home Page</h1>';
+      appContainer.textContent = 'Home Page';
       break;
     case 'about':
-      appContainer.innerHTML = '<h1>About Us</h1>';
+      appContainer.textContent = 'About Us';
       break;
     case 'contact':
-      appContainer.innerHTML = '<h1>Contact Us</h1>';
+      appContainer.textContent = 'Contact Us';
       break;
     default:
-      appContainer.innerHTML = '<h1>Page Not Found</h1>';
+      appContainer.textContent = 'Page Not Found';
       break;
   }
 };
@@ -366,7 +373,7 @@ function viewProduct(productId) {
 // Update state without changing the route
 function updateProductOptions(options) {
   hashRouter.replaceState({ 
-    state: { ...hashRouter.getState(), options } 
+    state: { ...hashRouter.getState(), ...options } 
   });
 }
 
@@ -376,6 +383,12 @@ function getCurrentProductId() {
   return state?.productId;
 }
 ```
+
+State and the page lifecycle:
+
+- After a full page reload the entry state is **restored from the native `history.state`** — the router seeds and reconciles its model with it on boot (empty `{}` when nothing was stored). Navigations with state survive a reload:
+  `hashRouter.navigate('product', { productId: 42 })` → F5 → `hashRouter.getState()` still returns `{ productId: 42 }`.
+- Replacing the hash without an explicit new state (redirects, `updateCurrentEntryHash`) keeps the current state; passing an explicit `null` clears it.
 
 ### Route Parameters and Queries
 
@@ -417,7 +430,11 @@ hashRouter.create({
 hashRouter.navigate('users/123?tab=settings');
 hashRouter.navigate('products/electronics/laptop-15?color=silver&price=999');
 
-// Helper function to access params in components
+// Helper functions to access params/query from the live current entry.
+// Components reading these hooks must be subscribed to the signals:
+// the Babel plugin @preact/signals-react/transform does it automatically,
+// otherwise call useSignals() from @preact/signals-react/runtime —
+// see “Signals in React” below.
 function useRouteParams() {
   return hashRouter.currentEntry.value.getParams();
 }
@@ -491,65 +508,160 @@ function navigateToProduct(productId: string): void {
 
 #### React Integration
 
+The router state is exposed through Preact signals (`currentEntry`, `state`, `hash`, `entries`, `canGoBack`, `canGoForward`). In React this means:
+
+- reading `someSignal.value` during render subscribes the component to that signal;
+- when the underlying entry changes, subscribed components re-render automatically;
+- **no `useState`/`useMemo` snapshots and no forced re-renders are needed** — snapshots from `getHash()`/`getState()` are stale the next moment the route changes.
+
 ```tsx
-import React, { useState, useEffect, useMemo } from 'react';
+import { useSignalEffect } from '@preact/signals-react';
+import { useSignals } from '@preact/signals-react/runtime';
 import { hashRouter } from '@front-utils/router';
 
-// Custom hook for using the router
-function useHashRouter() {
-  const [routerInstance, setRouterInstance] = useState(null);
-  
-  // Initialize once
-  useEffect(() => {
-    const unsubscribe = hashRouter.create({
-      onChange: (location) => {
-        // Force a re-render on location change
-        setRouterInstance({});
-      },
-      config: {
-        homeUrl: 'home',
-        routeNames: ['home', 'users', 'users/:id', 'settings']
-      }
-    });
-    
-    return unsubscribe;
-  }, []);
-  
-  // Return consistent references to current values and methods
-  return useMemo(() => ({
-    currentRoute: hashRouter.getHash(),
-    routeState: hashRouter.getState() || {},
-    currentEntry: hashRouter.currentEntry.value,
-    params: hashRouter.currentEntry.value.getParams(),
-    query: hashRouter.currentEntry.value.getQuery(),
-    navigate: hashRouter.navigate,
-    goBack: hashRouter.goBack,
-    canGoBack: hashRouter.canGoBack.value
-  }), [routerInstance]);
-}
+// Initialize once on the app bootstrap (module scope is fine for an SPA).
+// create()/destroy() are ref-counted: nested/repeated create() without
+// destroy() keeps one shared history model and one hashchange listener.
+hashRouter.create({
+  onChange: (entry, prevEntry, navigationStatus) => {
+    // analytics, redirects, theme switching, etc.
+  },
+  config: {
+    homeUrl: 'home',
+    routeNames: ['home', 'users/:id', 'settings']
+  }
+});
 
-// Example component
+// The component reads .value during render, so it subscribes to the
+// signals it uses and re-renders when the route changes. useSignals()
+// enables this subscription when the Babel plugin is not configured.
 function App() {
-  const { currentRoute, params, query, navigate, goBack, canGoBack } = useHashRouter();
-  
+  useSignals();
+
+  const { hash } = hashRouter;
+  const canGoBack = hashRouter.canGoBack.value;
+
   return (
     <div>
       <nav>
-        <button onClick={() => navigate('home')}>Home</button>
-        <button onClick={() => navigate('users')}>Users</button>
-        <button onClick={() => navigate('settings')}>Settings</button>
-        {canGoBack && <button onClick={goBack}>Back</button>}
+        <button onClick={() => hashRouter.navigate('home')}>Home</button>
+        <button onClick={() => hashRouter.navigate('users/42')}>User 42</button>
+        <button onClick={() => hashRouter.navigate('settings')}>Settings</button>
+        {canGoBack && <button onClick={() => hashRouter.goBack()}>Back</button>}
       </nav>
-      
+
       <main>
-        {currentRoute === 'home' && <HomePage />}
-        {currentRoute === 'users' && !params.id && <UsersPage page={query.page} />}
-        {currentRoute === 'users' && params.id && <UserDetailsPage userId={params.id} />}
-        {currentRoute === 'settings' && <SettingsPage />}
+        {hash.value === 'home' && <HomePage />}
+        {hash.value.startsWith('users/') && (
+          <UserPage userId={hashRouter.currentEntry.value.getParams().id} />
+        )}
+        {hash.value === 'settings' && <SettingsPage />}
       </main>
     </div>
   );
 }
+
+// Signal effects replace useEffect subscriptions for router side effects:
+function DocumentTitle() {
+  useSignalEffect(() => {
+    // getHash() reads the currentEntry signal, so the title always
+    // follows the live route — the read happens before any await
+    document.title = `My App — ${hashRouter.getHash()}`;
+  });
+
+  return null;
+}
+```
+
+#### Signals in React
+
+The rules below come from the official `@preact/signals` documentation (`packages/react`, `packages/react-transform` and `eslint-plugin-signals` in the [preactjs/signals](https://github.com/preactjs/signals) repo).
+
+**How components get subscribed.** Two equivalent ways:
+
+1. **Babel transform** — add `@preact/signals-react/transform` to the Babel config (or use the Vite plugin equivalent): signal reads inside components are automatically wrapped, no code changes needed.
+2. **Runtime hook** — call `useSignals()` at the top of every component that reads `.value`:
+
+```tsx
+import { useSignals } from '@preact/signals-react/runtime';
+import { hashRouter } from '@front-utils/router';
+
+function RouteInfo() {
+  useSignals();
+
+  // The bare call is enough when the Babel transform is unavailable:
+  // the component subscribes to every signal read in it, and the hook
+  // unsubscribes automatically on unmount.
+  return <p>Current hash: {hashRouter.hash.value}</p>;
+}
+```
+
+**Hooks for signal logic inside components** (per the official docs, never instantiate raw `signal()`/`computed()`/`effect()` in a component body — each render would create new instances and leak subscriptions):
+
+```tsx
+import { useSignal, useComputed, useSignalEffect } from '@preact/signals-react';
+
+function SyncToggle() {
+  // local state as a signal, not useState
+  const inSync = useSignal(true);
+  // derived values recompute automatically
+  const count = useComputed(() => hashRouter.entries.value.length * (inSync.value ? 1 : 0));
+
+  useSignalEffect(() => {
+    console.log(`entries: ${count.value}`);
+  });
+
+  return <button onClick={() => inSync.value = !inSync.value}>sync: {String(inSync.value)}</button>;
+}
+```
+
+**Pitfalls to avoid** (each is covered by a rule in `@preactjs/signals/eslint-plugin-signals`):
+
+```tsx
+// ❌ Reading .value outside a reactive scope yields a frozen snapshot
+const routeName = hashRouter.hash.value; // module scope — read once, never refreshes
+function Header() {
+  return <h1>{routeName}</h1>;           // always stale
+}
+
+// ✅ Read inside the render of a subscribed component
+function Header() {
+  useSignals();
+  return <h1>{hashRouter.hash.value}</h1>; // re-renders on every change
+}
+
+// The same applies to event handlers / useMemo / plain callbacks: those
+// reads are snapshots — pass the signal object around and read .value reactively.
+
+// ❌ A guard that doesn't read .value silently breaks tracking
+useSignalEffect(() => {
+  if (!hasFeatureFlag) return;          // plain variable — no re-run
+  doSomething(hashRouter.hash.value);   // hash changes may be missed
+});
+
+// ✅ Reads that participate in tracking must touch .value themselves
+useSignalEffect(() => {
+  const enabled = hashRouter.state.value.enabled;  // tracked
+  if (!enabled) return;
+  doSomething(hashRouter.hash.value);
+});
+
+// ❌ Reading .value after `await` — tracking is synchronous and
+//    suspended at each await point
+useSignalEffect(async () => {
+  const hash = hashRouter.hash.value;            // ✅ read before the await
+  const entries = await fetchEntries(hash);
+  console.log(hashRouter.hash.value);            // ❌ NOT tracked
+});
+
+// ✅ Pre-read what the async part needs, or mark the read untracked
+// (untracked() comes from @preact/signals)
+useSignalEffect(async () => {
+  const hash = hashRouter.hash.value;
+  const entries = await fetchEntries(hash);
+  if (untracked(() => hashRouter.hash.value) !== hash) return; // stale response
+  console.log(`entries for ${hash}:`, entries.length);
+});
 ```
 
 #### Using ClientRouter Component
@@ -557,7 +669,7 @@ function App() {
 The `ClientRouter` component provides a declarative way to define and manage routes in your React application:
 
 ```tsx
-import React, { useEffect } from 'react';
+import React from 'react';
 import { hashRouter, ClientRouter } from '@front-utils/router';
 
 // Define page components
@@ -567,13 +679,14 @@ const UserPage = ({ userId }) => <div>User Profile for User {userId}</div>;
 const NotFoundPage = () => <div>404 - Page Not Found</div>;
 
 function App() {
-  
-  // Create a map of routes to components
-  const routes = new Map([
-    ['home', HomePage],
-    ['about', AboutPage],
-    ['user/:userId', UserPage]
-  ]);
+
+  // A plain object (Record) maps route patterns to components. A `Map` is
+  // NOT supported: route discovery iterates over object keys.
+  const routes = {
+    home: HomePage,
+    about: AboutPage,
+    'user/:userId': UserPage
+  };
   
   return (
     <div className="app">
@@ -604,7 +717,7 @@ export default App;
 1. **With TypeScript and route parameters:**
 
 ```tsx
-import React, { useEffect } from 'react';
+import React from 'react';
 import { hashRouter, ClientRouter } from '@front-utils/router';
 
 interface UserProfileProps {
@@ -638,12 +751,14 @@ const NotFoundPage = () => <div>Page Not Found</div>;
 
 function App() {
 
-  const routes = new Map([
-    ['home', HomePage],
-    ['about', AboutPage],
-    ['users/:userId', UserProfile],
-    ['products/:categoryId/:productId', ProductPage]
-  ]);
+  // Route params arrive as props; the query string is available through
+  // hashRouter.currentEntry.value.getQuery()
+  const routes = {
+    home: HomePage,
+    about: AboutPage,
+    'users/:userId': UserProfile,
+    'products/:categoryId/:productId': ProductPage
+  };
   
   return (
     <div>
@@ -674,7 +789,7 @@ function App() {
 2. **With React Context for better organization:**
 
 ```tsx
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
 import { hashRouter, ClientRouter } from '@front-utils/router';
 
 // Create context
@@ -720,12 +835,15 @@ const NotFoundPage = () => <h1>Page Not Found</h1>;
 // Main app component
 function MainApp() {
   const router = useRouter();
-  const routes = new Map([
-    ['home', HomePage],
-    ['dashboard', DashboardPage],
-    ['profile/:userId', ProfilePage],
-    ['settings', SettingsPage]
-  ]);
+
+  // Plain object, not a Map — keep it module-scope or stable-referenced
+  // (route groups are compared by content, inline objects are fine)
+  const routes = {
+    home: HomePage,
+    dashboard: DashboardPage,
+    'profile/:userId': ProfilePage,
+    settings: SettingsPage
+  };
   
   return (
     <div className="app">
@@ -753,7 +871,7 @@ export default function App() {
 3. **With Code Splitting:**
 
 ```tsx
-import React, { Suspense, lazy, useEffect } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { hashRouter, ClientRouter } from '@front-utils/router';
 
 // Lazy loaded components
@@ -766,11 +884,12 @@ const NotFoundPage = lazy(() => import('./pages/NotFound'));
 const Loading = () => <div className="loading">Loading...</div>;
 
 function App() {  
-  const routes = new Map([
-    ['home', HomePage],
-    ['about', AboutPage],
-    ['user/:userId', UserProfilePage]
-  ]);
+  // Plain object route map (`Map` is not supported)
+  const routes = {
+    home: HomePage,
+    about: AboutPage,
+    'user/:userId': UserProfilePage
+  };
   
   return (
     <div className="app">
@@ -921,7 +1040,7 @@ When a subscriber attaches before the first `create()`, applying the config re-e
 
 ## Contract Interfaces
 
-The library is built on the following TypeScript interfaces:
+The library is built on the following TypeScript interfaces. The source of truth is [`packages/router/src/types.ts`](https://github.com/front-util/router/blob/main/packages/router/src/types.ts) — keep this section in sync when changing the public surface:
 
 ### HashNavigation Interface
 
@@ -1029,11 +1148,6 @@ export interface NavigationHistoryEntry {
   hash: string;
 }
 
-export interface NavigationResult {
-  committed: Promise<NavigationHistoryEntry>;
-  finished: Promise<NavigationHistoryEntry>;
-}
-
 export interface NavigationOptions {
   state?: unknown;
   info?: unknown;
@@ -1063,6 +1177,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 **State not persisting between navigations**
 - Ensure you're using `navigate()` with state parameter correctly
 - Verify you're retrieving state with `getState()` method
+- Navigation state survives a full page reload: it is seeded from the native `history.state` on boot. If the state is gone after a reload, check that no other code calls `history.replaceState(undefined, ...)` for the entry (this clears the native state)
 
 **Route parameters not working**
 - Ensure your route patterns are correctly defined in the `routeNames` array
@@ -1076,4 +1191,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the ISC License - see the [LICENSE](LICENSE) file for details.
